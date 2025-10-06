@@ -1,0 +1,27 @@
+@import "../libs/dropzone/dropzone.css";
+@import "../libs/jsvectormap/css/jsvectormap.min.css";
+@import "../libs/jsvectormap/swiper/swiper-bundle.min.css";
+@import "./bootstrap.min.css";
+@import "./icons.min.css";
+@import "./app.min.css";
+@import "./custom.min.css";
+
+.show{
+    visibility: visible !important;
+}
+
+.logo{
+    width: 100px;
+    height: 100px;
+    margin-top: 10px;
+}
+
+.auth-logo img, .logo img {
+    height: 100px !important;
+    filter: brightness(0) invert(1);
+}
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

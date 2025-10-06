@@ -1,0 +1,2 @@
+
+<th>@translate($label)</th>

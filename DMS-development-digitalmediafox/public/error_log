@@ -1,0 +1,9 @@
+[21-Sep-2025 12:45:42 UTC] PHP Warning:  Unknown: open_basedir restriction in effect. File(/home3/orasip54/public_html/dms.digitalmediafox.in/public/index.php) is not within the allowed path(s): (/www/wwwroot/dms.speed.sa/:/tmp/:/www/php_session/dms.speed.sa/) in Unknown on line 0
+[21-Sep-2025 12:45:42 UTC] PHP Warning:  Unknown: Failed to open stream: Operation not permitted in Unknown on line 0
+[21-Sep-2025 12:45:42 UTC] PHP Fatal error:  Failed opening required '/home3/orasip54/public_html/dms.digitalmediafox.in/public/index.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in Unknown on line 0
+[22-Sep-2025 02:28:39 UTC] PHP Warning:  Unknown: open_basedir restriction in effect. File(/home3/orasip54/public_html/dms.digitalmediafox.in/public/index.php) is not within the allowed path(s): (/www/wwwroot/dms.speed.sa/:/tmp/:/www/php_session/dms.speed.sa/) in Unknown on line 0
+[22-Sep-2025 02:28:39 UTC] PHP Warning:  Unknown: Failed to open stream: Operation not permitted in Unknown on line 0
+[22-Sep-2025 02:28:39 UTC] PHP Fatal error:  Failed opening required '/home3/orasip54/public_html/dms.digitalmediafox.in/public/index.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in Unknown on line 0
+[22-Sep-2025 03:57:55 UTC] PHP Warning:  Unknown: open_basedir restriction in effect. File(/home3/orasip54/public_html/dms.digitalmediafox.in/public/index.php) is not within the allowed path(s): (/www/wwwroot/dms.speed.sa/:/tmp/:/www/php_session/dms.speed.sa/) in Unknown on line 0
+[22-Sep-2025 03:57:55 UTC] PHP Warning:  Unknown: Failed to open stream: Operation not permitted in Unknown on line 0
+[22-Sep-2025 03:57:55 UTC] PHP Fatal error:  Failed opening required '/home3/orasip54/public_html/dms.digitalmediafox.in/public/index.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in Unknown on line 0
