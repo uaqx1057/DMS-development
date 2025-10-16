@@ -220,6 +220,61 @@
                             <x-ui.alert error="business_ids"/>
                         <!-- End: Business Card -->
                     </x-ui.row>
+                    @if(!empty($availableBusinessIds))
+                        <x-ui.row>
+                            <x-ui.col class="mb-1 col-lg-12 col-md-12">
+                                <x-form.label for="" name="Select Business IDs"/>
+                                <small class="text-warning">Note: Selecting already assigned IDs will transfer them from previous driver</small>
+                            </x-ui.col>
+                        </x-ui.row>
+                        
+                        @foreach($availableBusinessIds as $businessId => $businessIds)
+                            @if($businessIds->count() > 0)
+                                <x-ui.row class="mb-2">
+                                    <x-ui.col class="mb-2 col-lg-12">
+                                        <h6 class="text-muted">{{ $businesses->firstWhere('id', $businessId)->name }} - All Available IDs</h6>
+                                        <div class="row">
+                                            @foreach($businessIds as $id)
+                                                @php
+                                                    $currentDriver = $id->currentDriver();
+                                                    $isAssigned = !is_null($currentDriver);
+                                                    $isAssignedToCurrentDriver = $isAssigned && $currentDriver->id == $this->driverId;
+                                                @endphp
+                                                <div class="col-3 mb-2">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input"
+                                                            type="checkbox"
+                                                            id="business_id_{{ $id->id }}"
+                                                            value="{{ $id->id }}"
+                                                            wire:model="selectedBusinessIds"
+                                                            {{ $isAssignedToCurrentDriver ? 'checked' : '' }}
+                                                        />
+                                                        <label class="form-check-label {{ $isAssigned && !$isAssignedToCurrentDriver ? 'text-warning' : '' }} {{ $isAssignedToCurrentDriver ? 'text-success' : '' }}" for="business_id_{{ $id->id }}">
+                                                            {{ $id->value }}
+                                                            @if($isAssigned && !$isAssignedToCurrentDriver)
+                                                                <small class="text-muted">(Currently assigned to: {{ $currentDriver->name }})</small>
+                                                            @elseif($isAssignedToCurrentDriver)
+                                                                <small class="text-muted">(Currently assigned to this driver)</small>
+                                                            @endif
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </x-ui.col>
+                                </x-ui.row>
+                            @else
+                                <x-ui.row class="mb-2">
+                                    <x-ui.col class="col-lg-12">
+                                        <div class="alert alert-warning">
+                                            No Business IDs available for {{ $businesses->firstWhere('id', $businessId)->name }}
+                                        </div>
+                                    </x-ui.col>
+                                </x-ui.row>
+                            @endif
+                        @endforeach
+                        <x-ui.alert error="selectedBusinessIds"/>
+                    @endif
 
                     <!-- Begin: Remarks Card -->
                     <x-ui.col class="mb-3">

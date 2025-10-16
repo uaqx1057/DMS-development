@@ -139,6 +139,21 @@ trait ModuleTrait
                 'is_delete' => 0,
                 'index' => 4
             ],
+            [
+                'name' => 'Businesses Id',
+                'icon' => 'ri-dashboard-2-line',
+                'data_key' => 't-analytics',
+                'data_id' => '',
+                'route' => 'businessid.index',
+                'type' => 2,
+                'parent_id' => 4,
+                'is_collapseable' => true,
+                'is_view' => 1,
+                'is_add' => 1,
+                'is_edit' => 1,
+                'is_delete' => 0,
+                'index' => 5
+            ],
             // 8
             [
                 'name' => 'Coordinator Report',
@@ -153,7 +168,7 @@ trait ModuleTrait
                 'is_add' => 1,
                 'is_edit' => 1,
                 'is_delete' => 0,
-                'index' => 5
+                'index' => 6
             ],
              // 9
              [
@@ -169,7 +184,7 @@ trait ModuleTrait
                 'is_add' => 0,
                 'is_edit' => 0,
                 'is_delete' => 0,
-                'index' => 6
+                'index' => 7
             ],
             // 10
             [
@@ -185,7 +200,7 @@ trait ModuleTrait
                 'is_add' => 0,
                 'is_edit' => 0,
                 'is_delete' => 0,
-                'index' => 7
+                'index' => 8
             ],
             // 11
             // [

@@ -5,86 +5,120 @@ namespace App\Repositories;
 use App\Interfaces\CoordinatorReportInterface;
 use App\Models\CoordinatorReport;
 use App\Models\Field;
+use App\Models\BusinessId;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
+
 class CoordinatorReportRepository implements CoordinatorReportInterface
 {
-public function all($perPage = 10, $currentPage = null, $filters = [])
-{
-    $query = CoordinatorReport::with([
-        'report_fields.field',
-        'driver.branch',
-        'businesses', // 👈 Add eager loading for businesses
-    ]);
-
-    // Filter by driver_id
-    if (!empty($filters['driver_id'])) {
-        $query->where('driver_id', $filters['driver_id']);
-    }
-
-    // Filter by date_range
-    if (!empty($filters['date_range'])) {
-        $dates = explode(' to ', $filters['date_range']);
-        $query->whereBetween('report_date', [
-            $dates[0],
-            $dates[1] ?? $dates[0], // Handle single date or range
+    public function all($perPage = 10, $currentPage = null, $filters = [])
+    {
+        $query = CoordinatorReport::with([
+            'report_fields.field',
+            'driver.branch',
+            'businesses',
         ]);
-    } else {
-        $query->whereDate('report_date', now()->format('Y-m-d'));
-    }
 
-    // Filter by business_id via report_fields
-    if (!empty($filters['business_id'])) {
-        $query->whereHas('report_fields', function ($q) use ($filters) {
-            $q->where('business_id', $filters['business_id']);
-        });
-    }
-
-    // Filter by branch_id via driver relation
-    if (!empty($filters['branch_id'])) {
-        $query->whereHas('driver.branch', function ($q) use ($filters) {
-            $q->where('id', $filters['branch_id']);
-        });
-    }
-
-    $coordinatorReports = $query->get();
-
-    $fields = $coordinatorReports
-        ->pluck('report_fields.*.field.name')
-        ->flatten()
-        ->unique()
-        ->toArray();
-
-    $result = $coordinatorReports->map(function ($report) use ($fields) {
-        $reportModel = (new CoordinatorReport())->fill($report->toArray());
-
-        $reportModel->setAttribute('id', $report->id);
-        $reportModel->setAttribute('driver_iqama', optional($report->driver)->iqaama_number ?? 'N/A');
-         $reportModel->setAttribute('driver_name', optional($report->driver)->name ?? 'N/A');
-        $reportModel->setAttribute('branch_name', optional($report->driver->branch)->name ?? 'N/A');
-        $reportModel->setAttribute('report_status', $report->status ?? 'Unknown');
-
-        // 👇 Business name from relationship
-        $reportModel->setAttribute('business_name', $report->businesses->pluck('name')->implode(', ') ?? 'N/A');
-
-        foreach ($fields as $field) {
-            $totalFieldValue = $report->report_fields
-                ->where('field.name', $field)
-                ->pluck('value')
-                ->map(fn($value) => is_numeric($value) ? (float) $value : 0)
-                ->sum();
-
-            $reportModel->setAttribute($field, $totalFieldValue);
+        // Filter by driver_id
+        if (!empty($filters['driver_id'])) {
+            $query->where('driver_id', $filters['driver_id']);
         }
 
-        return $reportModel;
-    });
+        // Filter by date_range
+        if (!empty($filters['date_range'])) {
+            $dates = explode(' to ', $filters['date_range']);
+            $query->whereBetween('report_date', [
+                $dates[0],
+                $dates[1] ?? $dates[0], // Handle single date or range
+            ]);
+        } else {
+            $query->whereDate('report_date', now()->format('Y-m-d'));
+        }
 
-    $currentPage = $currentPage ?: LengthAwarePaginator::resolveCurrentPage();
-    $paginatedItems = $this->paginateCollection($result->filter(), $perPage, $currentPage);
+        // Filter by business_id via report_fields
+        if (!empty($filters['business_id'])) {
+            $query->whereHas('report_fields', function ($q) use ($filters) {
+                $q->where('business_id', $filters['business_id']);
+            });
+        }
 
-    return $paginatedItems;
-}
+        // Filter by branch_id via driver relation
+        if (!empty($filters['branch_id'])) {
+            $query->whereHas('driver.branch', function ($q) use ($filters) {
+                $q->where('id', $filters['branch_id']);
+            });
+        }
+
+        $coordinatorReports = $query->get();
+
+        $fields = $coordinatorReports
+            ->pluck('report_fields.*.field.name')
+            ->flatten()
+            ->unique()
+            ->toArray();
+
+        // 🆕 CREATE SEPARATE RECORDS FOR EACH BUSINESS VALUE
+        $expandedResults = new Collection();
+        
+        foreach ($coordinatorReports as $report) {
+            // Group report fields by business_id_value
+            $groupedFields = $report->report_fields->groupBy('business_id_value');
+            
+            foreach ($groupedFields as $businessIdValue => $fieldsGroup) {
+                $businessId = \App\Models\BusinessId::find($businessIdValue);
+                
+                if ($businessId) {
+                    $reportModel = (new CoordinatorReport())->fill($report->toArray());
+                    
+                    $reportModel->setAttribute('id', $report->id);
+                    $reportModel->setAttribute('driver_iqama', optional($report->driver)->iqaama_number ?? 'N/A');
+                    $reportModel->setAttribute('driver_name', optional($report->driver)->name ?? 'N/A');
+                    $reportModel->setAttribute('branch_name', optional($report->driver->branch)->name ?? 'N/A');
+                    $reportModel->setAttribute('report_status', $report->status ?? 'Unknown');
+                    
+                    // 🆕 SET BUSINESS NAME WITH BOTH BUSINESS NAME AND VALUE
+                    $businessTypeName = $businessId->business->name ?? 'Unknown Business';
+                    $reportModel->setAttribute('business_name', "{$businessTypeName} ({$businessId->value})");
+                    
+                    // 🆕 CALCULATE FIELD VALUES ONLY FOR THIS BUSINESS VALUE
+                    foreach ($fields as $field) {
+                        $totalFieldValue = $fieldsGroup
+                            ->where('field.name', $field)
+                            ->pluck('value')
+                            ->map(fn($value) => is_numeric($value) ? (float) $value : 0)
+                            ->sum();
+                            
+                        $reportModel->setAttribute($field, $totalFieldValue);
+                    }
+                    
+                    $expandedResults->push($reportModel);
+                }
+            }
+            
+            // 🆕 IF NO BUSINESS FIELDS, STILL ADD THE REPORT WITH DEFAULT VALUES
+            if ($report->report_fields->isEmpty()) {
+                $reportModel = (new CoordinatorReport())->fill($report->toArray());
+                
+                $reportModel->setAttribute('id', $report->id);
+                $reportModel->setAttribute('driver_iqama', optional($report->driver)->iqaama_number ?? 'N/A');
+                $reportModel->setAttribute('driver_name', optional($report->driver)->name ?? 'N/A');
+                $reportModel->setAttribute('branch_name', optional($report->driver->branch)->name ?? 'N/A');
+                $reportModel->setAttribute('report_status', $report->status ?? 'Unknown');
+                $reportModel->setAttribute('business_name', 'N/A');
+                
+                foreach ($fields as $field) {
+                    $reportModel->setAttribute($field, 0);
+                }
+                
+                $expandedResults->push($reportModel);
+            }
+        }
+
+        $currentPage = $currentPage ?: LengthAwarePaginator::resolveCurrentPage();
+        $paginatedItems = $this->paginateCollection($expandedResults, $perPage, $currentPage);
+
+        return $paginatedItems;
+    }
 
 
 
@@ -103,119 +137,174 @@ private function paginateCollection(Collection $items, $perPage, $currentPage)
     );
 }
 
-    public function create($data){
+     public function create($data){
         // Create Coordinator Report
         $report = CoordinatorReport::create($data);
-        // Storing Businesses
-        $report->businesses()->attach($data['businesses']);
-        // Create Field Values
-        foreach ($data['formData'] as $businessId => $fields) {
-            foreach ($fields as $fieldName => $value) {
-                $field = Field::where('short_name', $fieldName)->first();
+        
+        // Store business type IDs (for the businesses relationship)
+        if (!empty($data['selectedBusinessIds'])) {
+            $businessTypeIds = BusinessId::whereIn('id', $data['selectedBusinessIds'])
+                ->pluck('business_id')
+                ->unique()
+                ->toArray();
+                
+            $report->businesses()->attach($businessTypeIds);
+        }
 
-                if ($field->type != 'DOCUMENT') {
-                    // For non-document fields, store the value directly
-                    $report->report_fields()->create([
-                        'business_id' => $businessId,
-                        'field_id' => $field->id,
-                        'value' => $value
-                    ]);
-                } else {
-                    // Handle document field (multi-file upload)
-                    if (isset($data['files'][$businessId][$fieldName]) && is_array($data['files'][$businessId][$fieldName])) {
-                        // Initialize an array to hold file paths
-                        $uploadedFilePaths = [];
+        // Create Field Values for each selected business ID
+        if (!empty($data['formData'])) {
+            foreach ($data['formData'] as $businessIdValue => $fields) {
+                $businessId = BusinessId::find($businessIdValue);
+                
+                if ($businessId) {
+                    foreach ($fields as $fieldName => $value) {
+                        $field = Field::where('short_name', $fieldName)->first();
 
-                        // Iterate over each uploaded file
-                        foreach ($data['files'][$businessId][$fieldName] as $file) {
-                            // Upload the file and store its path
-                            $filePath = $file->store('uploads/documents', 'public');  // Adjust the path and disk as needed
-                            $uploadedFilePaths[] = $filePath;
+                        if ($field) {
+                            if ($field->type != 'DOCUMENT') {
+                                // For non-document fields, store the value directly with business_id_value
+                                $report->report_fields()->create([
+                                    'business_id' => $businessId->business_id, // Business type ID
+                                    'business_id_value' => $businessIdValue, // Specific business ID (business_ids.id)
+                                    'field_id' => $field->id,
+                                    'value' => $value
+                                ]);
+                                
+                                \Log::info("Stored field for business_id_value: {$businessIdValue}", [
+                                    'business_type_id' => $businessId->business_id,
+                                    'business_id_value' => $businessIdValue,
+                                    'field_id' => $field->id,
+                                    'field_name' => $fieldName,
+                                    'value' => $value
+                                ]);
+                            } else {
+                                // Handle document field (multi-file upload)
+                                if (isset($data['files'][$businessIdValue][$fieldName]) && is_array($data['files'][$businessIdValue][$fieldName])) {
+                                    $uploadedFilePaths = [];
+
+                                    foreach ($data['files'][$businessIdValue][$fieldName] as $file) {
+                                        $filePath = $file->store('uploads/documents', 'public');
+                                        $uploadedFilePaths[] = $filePath;
+                                    }
+
+                                    $report->report_fields()->create([
+                                        'business_id' => $businessId->business_id, // Business type ID
+                                        'business_id_value' => $businessIdValue, // Specific business ID (business_ids.id)
+                                        'field_id' => $field->id,
+                                        'value' => json_encode($uploadedFilePaths)
+                                    ]);
+                                    
+                                    \Log::info("Stored document field for business_id_value: {$businessIdValue}", [
+                                        'business_type_id' => $businessId->business_id,
+                                        'business_id_value' => $businessIdValue,
+                                        'field_id' => $field->id,
+                                        'field_name' => $fieldName,
+                                        'files_count' => count($uploadedFilePaths)
+                                    ]);
+                                }
+                            }
                         }
-
-                        // Save the JSON-encoded file paths
-                        $report->report_fields()->create([
-                            'business_id' => $businessId,
-                            'field_id' => $field->id,
-                            'value' => json_encode($uploadedFilePaths)
-                        ]);
                     }
                 }
             }
         }
-
+        
+        // Log final counts
+        $fieldCount = $report->report_fields()->count();
+        \Log::info("Coordinator Report created successfully", [
+            'report_id' => $report->id,
+            'selected_business_ids_count' => count($data['selectedBusinessIds'] ?? []),
+            'total_field_values_created' => $fieldCount
+        ]);
     }
+
+    /**
+     * Extract business type IDs from business IDs
+     */
+    private function getBusinessTypeIdsFromBusinessIds($businessIds)
+    {
+        return BusinessId::whereIn('id', $businessIds)
+            ->pluck('business_id')
+            ->unique()
+            ->toArray();
+    }
+
+    /**
+     * Get selected business IDs for a specific business type
+     */
+    private function getSelectedBusinessIdsForType($allBusinessIds, $businessTypeId)
+    {
+        return BusinessId::whereIn('id', $allBusinessIds)
+            ->where('business_id', $businessTypeId)
+            ->pluck('id')
+            ->toArray();
+    }
+
 
     public function update($data)
     {
         // Find the report
         $report = CoordinatorReport::find($data['id']);
 
-        // Sync businesses
-        $report->businesses()->sync($data['businesses']);
+        // Store business type IDs (for the businesses relationship)
+        if (!empty($data['selectedBusinessIds'])) {
+            $businessTypeIds = BusinessId::whereIn('id', $data['selectedBusinessIds'])
+                ->pluck('business_id')
+                ->unique()
+                ->toArray();
+                
+            $report->businesses()->sync($businessTypeIds);
+        }
 
-        // Iterate over formData and handle field updates or inserts
-        foreach ($data['formData'] as $businessId => $fields) {
-            foreach ($fields as $fieldName => $value) {
-                $field = Field::where('short_name', $fieldName)->first();
+        // First, delete all existing field values
+        $report->report_fields()->delete();
 
-                // Check if the field value already exists for this report
-                $existingFieldValue = $report->report_fields()
-                    ->where('business_id', $businessId)
-                    ->where('field_id', $field->id)
-                    ->first();
+        // Create Field Values for each selected business ID
+        if (!empty($data['formData'])) {
+            foreach ($data['formData'] as $businessIdValue => $fields) {
+                $businessId = BusinessId::find($businessIdValue);
+                
+                if ($businessId) {
+                    foreach ($fields as $fieldName => $value) {
+                        $field = Field::where('short_name', $fieldName)->first();
 
-                if ($field->type != 'DOCUMENT') {
-                    // For non-document fields
-                    if ($existingFieldValue) {
-                        // Update the existing value
-                        $existingFieldValue->update(['value' => $value]);
-                    } else {
-                        // Create a new field value if it doesn't exist
-                        $report->report_fields()->create([
-                            'business_id' => $businessId,
-                            'field_id' => $field->id,
-                            'value' => $value
-                        ]);
-                    }
-                } else {
-                    // Handle document field (multi-file upload)
-                    if (isset($data['files'][$businessId][$fieldName]) && is_array($data['files'][$businessId][$fieldName])) {
-                        // If it's a document and the field already exists, update the document
-                        if ($existingFieldValue) {
-                            // Initialize an array to hold file paths
-                            $uploadedFilePaths = json_decode($existingFieldValue->value, true) ?? [];
+                        if ($field) {
+                            if ($field->type != 'DOCUMENT') {
+                                // For non-document fields, store the value directly with business_id_value
+                                $report->report_fields()->create([
+                                    'business_id' => $businessId->business_id, // Business type ID
+                                    'business_id_value' => $businessIdValue, // Specific business ID (business_ids.id)
+                                    'field_id' => $field->id,
+                                    'value' => $value
+                                ]);
+                            } else {
+                                // Handle document field (multi-file upload)
+                                if (isset($data['files'][$businessIdValue][$fieldName]) && is_array($data['files'][$businessIdValue][$fieldName])) {
+                                    $uploadedFilePaths = [];
 
-                            // Iterate over each uploaded file
-                            foreach ($data['files'][$businessId][$fieldName] as $file) {
-                                // Upload the file and store its path
-                                $filePath = $file->store('uploads/documents', 'public');  // Adjust the path and disk as needed
-                                $uploadedFilePaths[] = $filePath;
+                                    foreach ($data['files'][$businessIdValue][$fieldName] as $file) {
+                                        $filePath = $file->store('uploads/documents', 'public');
+                                        $uploadedFilePaths[] = $filePath;
+                                    }
+
+                                    $report->report_fields()->create([
+                                        'business_id' => $businessId->business_id, // Business type ID
+                                        'business_id_value' => $businessIdValue, // Specific business ID (business_ids.id)
+                                        'field_id' => $field->id,
+                                        'value' => json_encode($uploadedFilePaths)
+                                    ]);
+                                } else {
+                                    // If no new files uploaded, keep the existing value
+                                    $report->report_fields()->create([
+                                        'business_id' => $businessId->business_id, // Business type ID
+                                        'business_id_value' => $businessIdValue, // Specific business ID (business_ids.id)
+                                        'field_id' => $field->id,
+                                        'value' => $value // This should be the existing file paths
+                                    ]);
+                                }
                             }
-
-                            // Update the field with the new document paths
-                            $existingFieldValue->update([
-                                'value' => json_encode($uploadedFilePaths)
-                            ]);
-                        } else {
-                            // Create a new document field entry if no existing field value is found
-                            $uploadedFilePaths = [];
-
-                            foreach ($data['files'][$businessId][$fieldName] as $file) {
-                                // Upload the file and store its path
-                                $filePath = $file->store('uploads/documents', 'public');  // Adjust the path and disk as needed
-                                $uploadedFilePaths[] = $filePath;
-                            }
-
-                            // Save the JSON-encoded file paths
-                            $report->report_fields()->create([
-                                'business_id' => $businessId,
-                                'field_id' => $field->id,
-                                'value' => json_encode($uploadedFilePaths)
-                            ]);
                         }
                     }
-                    // If no new document was uploaded and the field exists, do not change the value
                 }
             }
         }
@@ -226,11 +315,6 @@ private function paginateCollection(Collection $items, $perPage, $currentPage)
             'report_date' => $data['report_date'],
             'status' => $data['status']
         ]);
-
-        // Handle status changes (e.g., Approved status)
-        // if ($data['status'] === 'Approved') {
-            // Generating Revenue logic
-        // }
     }
 
     public function find($id){

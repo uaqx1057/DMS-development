@@ -63,5 +63,27 @@ class DriverService
     {
         return $this->driverRepository->getCount($status, $filters);
     }
+    // In DriverService or create a new service
+    public function transferBusinessIds($fromDriverId, $toDriverId, $businessIdIds)
+    {
+        $fromDriver = Driver::findOrFail($fromDriverId);
+        $toDriver = Driver::findOrFail($toDriverId);
+        
+        foreach ($businessIdIds as $businessIdId) {
+            // Mark previous assignment as transferred
+            \DB::table('driver_business_ids')
+                ->where('business_id_id', $businessIdId)
+                ->where('transferred_at', null)
+                ->update([
+                    'transferred_at' => now()
+                ]);
+                
+            // Create new assignment
+            $toDriver->businessIds()->attach($businessIdId, [
+                'assigned_at' => now(),
+                'previous_driver_id' => $fromDriverId
+            ]);
+        }
+    }
 
 }

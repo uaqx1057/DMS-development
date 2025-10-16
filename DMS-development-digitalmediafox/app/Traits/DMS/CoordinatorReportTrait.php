@@ -9,6 +9,7 @@ use App\Services\{
     DriverService,
     FieldService,
 };
+use App\Models\BusinessId;
 
 trait CoordinatorReportTrait
 {
@@ -30,20 +31,74 @@ trait CoordinatorReportTrait
     public array $formData = []; // Store form data business-wise
     public array $files = [];
     public $business_fields = [];
+    public array $selectedBusinessIds = []; // For multi-select business IDs
+    public array $availableBusinessIds = [];// Available IDs for selected businesses
 
     public function mount($id = null){
         if($id)
         {
             $this->coordinatorReport = $this->coordinatorReportService->find($id);
-            // dd($this->coordinatorReport->report_fields);
             $this->driver_id = $this->coordinatorReport->driver_id;
             $this->report_date = $this->coordinatorReport->report_date;
+            $this->status = $this->coordinatorReport->status;
+            
+            // Get business type IDs from the relationship
             $this->business_ids = $this->coordinatorReport->businesses()->pluck('businesses.id')->toArray();
-            $this->business_fields = $this->coordinatorReport->report_fields()->get();
+            
+            // Get selected business IDs from report_fields
+            $this->selectedBusinessIds = $this->coordinatorReport->report_fields()
+                ->pluck('business_id_value')
+                ->unique()
+                ->toArray();
+                
             $this->coordinatorReportId = $this->coordinatorReport->id;
-            // dd($this->business_fields[0]);
-            $this->handleBusinessSelectionUpdated();
+            
+            // Initialize available business IDs and form data
+            $this->handleBusinessSelectionForEdit();
         }
+    }
+
+    private function handleBusinessSelectionForEdit()
+    {
+        $this->availableBusinessIds = [];
+        $businesses_with_fields = [];
+        $formData = [];
+
+        // Initialize businesses_with_fields for selected business types
+        foreach ($this->business_ids as $businessId) {
+            $business = $this->businessService->find($businessId);
+            $businesses_with_fields[$businessId] = $business;
+
+            // Get available business IDs for the selected driver
+            $availableIds = BusinessId::where('business_id', $businessId)
+                ->whereHas('drivers', function($query) {
+                    $query->where('drivers.id', $this->driver_id)
+                        ->whereNull('driver_business_ids.transferred_at');
+                })
+                ->where('is_active', true)
+                ->get();
+
+            $this->availableBusinessIds[$businessId] = $availableIds;
+        }
+
+        $this->businesses_with_fields = $businesses_with_fields;
+
+        // Initialize form data from existing report fields
+        foreach ($this->coordinatorReport->report_fields as $field) {
+            $businessIdValue = $field->business_id_value;
+            $fieldName = $field->field->short_name;
+            $value = $field->value;
+            
+            $formData[$businessIdValue][$fieldName] = $value;
+        }
+
+        $this->formData = $formData;
+        
+        \Log::info("Edit form initialized", [
+            'business_ids' => $this->business_ids,
+            'selected_business_ids' => $this->selectedBusinessIds,
+            'form_data_keys' => array_keys($formData)
+        ]);
     }
 
     public function boot(
@@ -58,25 +113,156 @@ trait CoordinatorReportTrait
 
     public function handleBusinessSelection()
     {
+        $this->availableBusinessIds = [];
         $businesses_with_fields = [];
-        $formData = [];
+
+        // Check if driver is selected first
+        if (empty($this->driver_id)) {
+            $this->addError('business_ids', 'Please select a driver first');
+            $this->business_ids = []; // Reset business selections
+            $this->selectedBusinessIds = []; // Also reset selected business IDs
+            return;
+        }
+
+        // Clear any previous errors
+        $this->resetErrorBag('business_ids');
+
+        // For both create and edit, filter selectedBusinessIds to only include IDs that belong to currently selected business types
+        $filteredSelectedIds = [];
+        foreach ($this->selectedBusinessIds as $selectedId) {
+            $businessId = BusinessId::find($selectedId);
+            if ($businessId && in_array($businessId->business_id, $this->business_ids)) {
+                $filteredSelectedIds[] = $selectedId;
+            }
+        }
+        $this->selectedBusinessIds = $filteredSelectedIds;
 
         // Loop through selected businesses
         foreach ($this->business_ids as $businessId) {
-            $business = $this->businessService->find($businessId); // Fetch business with its fields
+            $business = $this->businessService->find($businessId);
+
+            // Get available business IDs for the selected driver
+            $availableIds = BusinessId::where('business_id', $businessId)
+                ->whereHas('drivers', function($query) {
+                    $query->where('drivers.id', $this->driver_id)
+                        ->whereNull('driver_business_ids.transferred_at');
+                })
+                ->where('is_active', true)
+                ->get();
+
+            $this->availableBusinessIds[$businessId] = $availableIds;
 
             // Add business to the array of businesses with fields
-            $businesses_with_fields[] = $business;
+            $businesses_with_fields[$businessId] = $business;
+        }
 
-            // Initialize formData for each business field
-            foreach ($business->fields as $field) {
-                $formData[$businessId][$field->short_name] = ''; // Initialize empty value for each field
+        // Set the dynamically populated businesses
+        $this->businesses_with_fields = $businesses_with_fields;
+        
+        // Initialize formData for selected business IDs
+        $this->initializeFormData();
+    }
+
+    public function updatedSelectedBusinessIds()
+    {
+        // When business IDs selection changes, reinitialize form data
+        $this->initializeFormData();
+    }
+
+    private function initializeFormData()
+    {
+        $formData = $this->formData; // Start with existing form data
+        $files = $this->files;
+
+        foreach ($this->selectedBusinessIds as $businessIdValue) {
+            $businessId = BusinessId::find($businessIdValue);
+            if ($businessId && isset($this->businesses_with_fields[$businessId->business_id])) {
+                $business = $this->businesses_with_fields[$businessId->business_id];
+                
+                // Only initialize if not already set (preserve existing data)
+                if (!isset($formData[$businessIdValue])) {
+                    $formData[$businessIdValue] = [];
+                }
+                
+                foreach ($business->fields as $field) {
+                    if (!isset($formData[$businessIdValue][$field->short_name])) {
+                        $formData[$businessIdValue][$field->short_name] = ''; // Initialize empty if not exists
+                    }
+                }
             }
         }
 
-        // Set the dynamically populated businesses and formData
-        $this->businesses_with_fields = $businesses_with_fields;
+        // Remove form data for business IDs that are no longer selected
+        foreach ($formData as $businessIdValue => $fields) {
+            if (!in_array($businessIdValue, $this->selectedBusinessIds)) {
+                unset($formData[$businessIdValue]);
+                // Also remove any files for this business ID
+                if (isset($files[$businessIdValue])) {
+                    unset($files[$businessIdValue]);
+                }
+            }
+        }
+
         $this->formData = $formData;
+        $this->files = $files;
+    }
+
+    public function validations()
+    {
+        // Define the static validation rules first
+        $validations = [
+            "driver_id" => 'required|exists:drivers,id',
+            "selectedBusinessIds" => 'required|array|min:1',
+            "report_date" => 'required|date',
+        ];
+
+        // Loop through each business ID and dynamically apply validation
+        foreach ($this->formData as $businessIdValue => $fields) {
+            $businessId = BusinessId::find($businessIdValue);
+            
+            if ($businessId && isset($this->businesses_with_fields[$businessId->business_id])) {
+                $business = $this->businesses_with_fields[$businessId->business_id];
+                
+                foreach ($fields as $fieldKey => $value) {
+                    // Find the field object for the current field key to check its 'required' property
+                    $field = $this->findFieldObject($businessId->business_id, $fieldKey);
+
+                    if ($field) {
+                        // Apply 'required' if the field is required, otherwise use 'sometimes'
+                        $validations["formData.{$businessIdValue}.{$fieldKey}"] = $field->required ? 'required' : 'sometimes';
+                    }
+                }
+
+                if (isset($this->files[$businessIdValue])) {
+                    foreach ($this->files[$businessIdValue] as $fileField => $fileArray) {
+                        foreach ($fileArray as $index => $file) {
+                            $validations["files.{$businessIdValue}.{$fileField}.{$index}"] = 'sometimes|nullable|file|mimes:jpeg,png,jpg';
+                        }
+                    }
+                }
+            }
+        }
+
+        \Log::info("Validation rules prepared", [
+            'total_validation_rules' => count($validations),
+            'selected_business_ids' => $this->selectedBusinessIds
+        ]);
+
+        return $this->validate($validations);
+    }
+
+    public function resetBusinessData()
+    {
+        // Reset all business-related data
+        $this->business_ids = [];
+        $this->selectedBusinessIds = [];
+        $this->availableBusinessIds = [];
+        $this->businesses_with_fields = [];
+        $this->formData = [];
+        $this->files = [];
+        
+        // Clear any business-related errors
+        $this->resetErrorBag(['business_ids', 'selectedBusinessIds']);
     }
 
     public function handleBusinessSelectionUpdated()
@@ -96,58 +282,17 @@ trait CoordinatorReportTrait
         $this->formData = $formData;
     }
 
-
-    public function validations()
+    // Helper method to find field object
+    public function findFieldObject($businessTypeId, $fieldKey)
     {
-        // Define the static validation rules first
-        $validations = [
-            "driver_id" => 'required|exists:drivers,id',
-            "business_ids" => 'required|array',
-            "report_date" => 'required|date',
-        ];
-        // dd($this->files);
-        // Loop through each business and dynamically apply validation
-        foreach ($this->formData as $businessId => $fields) {
-            foreach ($fields as $fieldKey => $value) {
-                // Find the field object for the current field key to check its 'required' property
-                $field = $this->findFieldObject($businessId, $fieldKey);
-
-                if ($field) {
-                    // Apply 'required' if the field is required, otherwise use 'sometimes'
-                    $validations["formData.{$businessId}.{$fieldKey}"] = $field->required ? 'required' : 'sometimes';
-                }
-            }
-
-            if (isset($this->files[$businessId])) {
-                foreach ($this->files[$businessId] as $fileField => $fileArray) {
-                    // Since `upload_driver_documents` is an array of files, loop through each file and validate
-                    foreach ($fileArray as $index => $file) {
-                        $validations["files.{$businessId}.{$fileField}.{$index}"] = 'sometimes|nullable|file|mimes:jpeg,png,jpg';
-                    }
-                }
-            }
-
-        }
-        // dd($validations);
-        // Perform the validation in a single call
-        return $this->validate($validations);
-
-    }
-
-    // A helper method to find the field object by its short_name (fieldKey) in a business
-    public function findFieldObject($businessId, $fieldKey)
-    {
-        foreach ($this->businesses_with_fields as $business) {
-            if ($business->id == $businessId) {
-                foreach ($business->fields as $field) {
-                    if ($field->short_name == $fieldKey) {
-                        return $field;
-                    }
+        if (isset($this->businesses_with_fields[$businessTypeId])) {
+            $business = $this->businesses_with_fields[$businessTypeId];
+            foreach ($business->fields as $field) {
+                if ($field->short_name == $fieldKey) {
+                    return $field;
                 }
             }
         }
-
-        return null; // Return null if the field object is not found
+        return null;
     }
-
 }

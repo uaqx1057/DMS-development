@@ -5,6 +5,7 @@ namespace App\Traits;
 use App\Models\Branch;
 use Illuminate\Support\Facades\DB;
 use App\Models\Driver;
+use Illuminate\Support\Facades\Hash;
 
 trait DriverTrait
 {
@@ -42,6 +43,7 @@ trait DriverTrait
                     'remarks' => $driver['remarks'],
                     'email' => $driver['email'],
                     'mobile' => $driver['work_mobile_with_phone_code'],
+                    'password' => Hash::make('password'),
                 ]);
             }
 

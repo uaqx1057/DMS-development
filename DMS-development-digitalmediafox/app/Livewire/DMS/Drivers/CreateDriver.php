@@ -5,6 +5,7 @@ namespace App\Livewire\DMS\Drivers;
 use App\Traits\DMS\DriverTrait;
 use App\Services\BusinessService;
 use App\Services\DriverService;
+use App\Models\BusinessId;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\Attributes\Title;
@@ -16,7 +17,8 @@ class CreateDriver extends Component
 
     public string $main_menu = 'Drivers';
     public string $menu = 'Create Driver';
-   
+    public $selectedBusinessIds = []; // For multi-select
+    public $availableBusinessIds = []; // Available IDs for selected businesses
 
     protected DriverService $driverService;
     protected BusinessService $businessService;
@@ -25,6 +27,22 @@ class CreateDriver extends Component
     {
         $this->driverService = $driverService;
         $this->businessService = $businessService;
+    }
+
+    // Handle business selection change
+    public function handleBusinessSelection()
+    {
+        $this->availableBusinessIds = [];
+        
+        if (!empty($this->business_ids)) {
+            foreach ($this->business_ids as $businessId) {
+                $availableIds = BusinessId::where('business_id', $businessId)
+                    ->where('is_active', true)
+                    ->get();
+                
+                $this->availableBusinessIds[$businessId] = $availableIds;
+            }
+        }
     }
 
     public function render()
@@ -36,21 +54,41 @@ class CreateDriver extends Component
         return view('livewire.dms.drivers.create-driver', compact('main_menu', 'menu', 'businesses'));
     }
 
- 
-        public function create(){
-            // * Applying Validations
-            $validated = $this->validations();
-            // * Storing Image
-             if (isset($this->image)) {
+    public function create(){
+        // * Applying Validations
+        $validated = $this->validations();
+        
+        // * Storing Image
+        if (isset($this->image)) {
             $validated['image'] = $this->image->store('drivers', 'public');
         }
 
+        // * Creating Driver
+        $driver = $this->driverService->create($validated);
 
-            // * Creating Driver
-            $this->driverService->create($validated);
+        // * Assign selected business IDs to driver (with transfer logic)
+        if (!empty($this->selectedBusinessIds)) {
+            foreach ($this->selectedBusinessIds as $businessIdId) {
+                $businessId = BusinessId::find($businessIdId);
+                $previousDriver = $businessId->currentDriver();
+                
+                // If this ID is currently assigned to another driver, transfer it
+                if ($previousDriver) {
+                    // Update the existing assignment to mark as transferred
+                    $businessId->drivers()->updateExistingPivot($previousDriver->id, [
+                        'transferred_at' => now()
+                    ]);
+                }
+                
+                // Create new assignment
+                $driver->businessIds()->attach($businessIdId, [
+                    'assigned_at' => now(),
+                    'previous_driver_id' => $previousDriver ? $previousDriver->id : null
+                ]);
+            }
+        }
 
-            session()->flash('success', translate('Driver Created Successfully!'));
-            return $this->redirectRoute('drivers.index', navigate:true);
+        session()->flash('success', translate('Driver Created Successfully!'));
+        return $this->redirectRoute('drivers.index', navigate:true);
     }
-
 }

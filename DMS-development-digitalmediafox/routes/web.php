@@ -6,6 +6,7 @@ use App\Livewire\Employee\{CreateEmployee, EditEmployee, EmployeeList};
 use App\Livewire\DMS\DriverTypes\{CreateDriverType, DriverTypeList, EditDriverType};
 use App\Livewire\DMS\Drivers\{CreateDriver, DriverList, EditDriver, ShowDriver};
 use App\Livewire\DMS\Businesses\{BusinessList, CreateBusiness, EditBusiness};
+use App\Livewire\DMS\BusinessesId\{BusinessIdList, CreateBusinessId, EditBusinessId};
 use App\Livewire\DMS\CoordinatorReport\{CoordinatorReportList, CreateCoordinatorReport, EditCoordinatorReport};
 use App\Livewire\DMS\Fields\{FieldList, CreateField};
 use App\Livewire\DMS\Payroll\PayrollList;
@@ -104,6 +105,14 @@ Route::get('/orders', OrderDetails::class)->name('orders.index');
             Route::get('/', BusinessList::class)->name('index')->middleware('permission:' . config('const.BUSINESSES') . ',' . config('const.VIEW'));
             Route::get('/create', CreateBusiness::class)->name('create')->middleware('permission:' . config('const.BUSINESSES') . ',' . config('const.ADD'));
             Route::get('/edit/{id}', EditBusiness::class)->name('edit')->middleware('permission:' . config('const.BUSINESSES') . ',' . config('const.EDIT'));
+        });
+
+        
+        // Businesses Id Routes
+        Route::prefix('businessesid')->as('businessid.')->group(function () {
+            Route::get('/', BusinessIdList::class)->name('index')->middleware('permission:' . config('const.BUSINESSESID') . ',' . config('const.VIEW'));
+            Route::get('/create', CreateBusinessId::class)->name('create')->middleware('permission:' . config('const.BUSINESSESID') . ',' . config('const.ADD'));
+            Route::get('/edit/{id}', EditBusinessId::class)->name('edit')->middleware('permission:' . config('const.BUSINESSESID') . ',' . config('const.EDIT'));
         });
 
         // Coordinator Reports Routes

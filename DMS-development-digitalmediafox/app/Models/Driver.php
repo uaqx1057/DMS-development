@@ -141,4 +141,15 @@ protected $fillable = [
     {
         return $this->belongsToMany(Business::class);
     }
+    public function businessIds()
+    {
+        return $this->belongsToMany(BusinessId::class, 'driver_business_ids')
+                    ->withPivot(['previous_driver_id', 'assigned_at', 'transferred_at'])
+                    ->withTimestamps();
+    }
+
+    public function assignedBusinessIds()
+    {
+        return $this->hasMany(DriverBusinessId::class);
+    }
 }
