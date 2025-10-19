@@ -7,11 +7,11 @@ use App\Models\BusinessId;
 use Livewire\Component;
 use Livewire\Attributes\Title;
 
-#[Title('Edit Business ID')]
+#[Title('Edit Platform')]
 class EditBusinessId extends Component
 {
     public string $main_menu = 'Business';
-    public string $menu = 'Edit Business ID';
+    public string $menu = 'Edit Platform';
     
     public $businessId;
     public $business_id;
@@ -44,8 +44,8 @@ class EditBusinessId extends Component
     {
         return [
             'business_id.required' => 'Please select a business.',
-            'value.required' => 'Please enter Business ID value.',
-            'value.unique' => 'This Business ID value already exists for the selected business.',
+            'value.required' => 'Please enter Platform value.',
+            'value.unique' => 'This Platform value already exists for the selected business.',
         ];
     }
 
@@ -66,7 +66,7 @@ class EditBusinessId extends Component
             'is_active' => $this->is_active
         ]);
 
-        session()->flash('success', translate('Business ID Updated Successfully!'));
+        session()->flash('success', translate('Platform Updated Successfully!'));
         return $this->redirectRoute('businessid.index', navigate: true);
     }
 

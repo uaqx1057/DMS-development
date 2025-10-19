@@ -18,9 +18,18 @@ class EditDriver extends Component
     public string $main_menu = 'Drivers';
     public string $menu = 'Edit Driver';
     
-    // ADD THESE PROPERTIES
-    public $selectedBusinessIds = [];
+    // Assigned IDs (checkboxes)
+    public $assignedBusinessIds = [];
+    
+    // New IDs to add (select boxes)
+    public $newBusinessIds = [];
     public $availableBusinessIds = [];
+    
+    // Show add section
+    public $showAddSection = false;
+
+    // Add this property to track if driver exists
+    public $driverExists = true;
 
     protected DriverService $driverService;
     protected BusinessService $businessService;
@@ -35,6 +44,13 @@ class EditDriver extends Component
     {
         $this->driverId = $id;
         $this->driver = $this->driverService->find($id);
+        
+        // Check if driver exists
+        if (!$this->driver) {
+            $this->driverExists = false;
+            session()->flash('error', translate('Driver not found!'));
+            return;
+        }
         
         // Load current driver data
         $this->name = $this->driver->name;
@@ -64,33 +80,59 @@ class EditDriver extends Component
         $this->business_ids = $this->driver->businesses->pluck('id')->toArray();
         
         // Load currently assigned business IDs
-        $this->selectedBusinessIds = $this->driver->businessIds->pluck('id')->toArray();
-        
-        // Load available business IDs
-        $this->loadAvailableBusinessIds();
+        $this->assignedBusinessIds = $this->driver->businessIds()
+            ->wherePivot('transferred_at', null)
+            ->pluck('business_ids.id')
+            ->toArray();
     }
 
-    // Handle business selection change
+    // Toggle add section
+    public function toggleAddSection()
+    {
+        if (!$this->driverExists) {
+            return;
+        }
+        
+        $this->showAddSection = !$this->showAddSection;
+        if ($this->showAddSection) {
+            $this->loadAvailableBusinessIds();
+        }
+    }
+
+    // Handle business selection for new IDs
     public function updatedBusinessIds()
     {
+        if (!$this->driverExists) {
+            return;
+        }
+        
         $this->loadAvailableBusinessIds();
     }
 
-    // Load available business IDs
+    // Load available (unassigned) business IDs
     private function loadAvailableBusinessIds()
     {
         $this->availableBusinessIds = [];
         
         if (!empty($this->business_ids)) {
             foreach ($this->business_ids as $businessId) {
-                // Remove the complex where condition to show ALL business IDs
+                // Get only unassigned business IDs
                 $availableIds = BusinessId::where('business_id', $businessId)
                     ->where('is_active', true)
-                    ->get(); // Show ALL active business IDs
+                    ->whereDoesntHave('drivers', function($query) {
+                        $query->whereNull('transferred_at');
+                    })
+                    ->get();
                 
                 $this->availableBusinessIds[$businessId] = $availableIds;
             }
         }
+    }
+
+    // Update selected new business IDs
+    public function updateNewBusinessIds($businessId, $selectedIds)
+    {
+        $this->newBusinessIds[$businessId] = $selectedIds;
     }
 
     public function render()
@@ -99,22 +141,60 @@ class EditDriver extends Component
         $menu = $this->menu;
         $driver = $this->driver;
         $businesses = $this->businessService->all();
-        return view('livewire.dms.drivers.edit-driver', compact('main_menu', 'menu', 'driver', 'businesses'));
+        
+        // Check if driver exists
+        if (!$this->driverExists) {
+            return view('livewire.dms.drivers.edit-driver', compact(
+                'main_menu', 
+                'menu'
+            ));
+        }
+        
+        // Group assigned IDs by business
+        $assignedIdsByBusiness = [];
+        if (!empty($this->assignedBusinessIds)) {
+            $assignedIds = BusinessId::whereIn('id', $this->assignedBusinessIds)
+                ->with('business')
+                ->get();
+            
+            foreach ($assignedIds as $id) {
+                $businessId = $id->business_id;
+                if (!isset($assignedIdsByBusiness[$businessId])) {
+                    $assignedIdsByBusiness[$businessId] = [];
+                }
+                $assignedIdsByBusiness[$businessId][] = $id;
+            }
+        }
+        
+        return view('livewire.dms.drivers.edit-driver', compact(
+            'main_menu', 
+            'menu', 
+            'driver', 
+            'businesses',
+            'assignedIdsByBusiness'
+        ));
     }
 
-    public function update(){
-        // * Applying Validations
+    public function update()
+    {
+        // Check if driver exists
+        if (!$this->driverExists) {
+            session()->flash('error', translate('Driver not found!'));
+            return $this->redirectRoute('drivers.index', navigate: true);
+        }
+
+        // Applying Validations
         $validated = $this->validations();
 
-        // * Storing Image
+        // Storing Image
         if($this->image){
             $validated['image'] = $this->image->store('drivers', 'public');
         }
 
-        // * Updating Driver
+        // Updating Driver
         $this->driverService->update($validated, $this->driverId);
 
-        // * Update business ID assignments
+        // Update business ID assignments
         $this->updateBusinessIdAssignments();
 
         session()->flash('success', translate('Driver Updated Successfully!'));
@@ -126,16 +206,26 @@ class EditDriver extends Component
     {
         $driver = $this->driverService->find($this->driverId);
         
-        // Get current assignments
-        $currentAssignments = $driver->businessIds->pluck('id')->toArray();
+        if (!$driver) {
+            return;
+        }
         
-        // IDs to remove (were assigned but now unselected)
-        $idsToRemove = array_diff($currentAssignments, $this->selectedBusinessIds);
+        // Get current assignments (only non-transferred)
+        $currentAssignments = $driver->businessIds()
+            ->wherePivot('transferred_at', null)
+            ->pluck('business_ids.id')
+            ->toArray();
         
-        // IDs to add (newly selected)
-        $idsToAdd = array_diff($this->selectedBusinessIds, $currentAssignments);
+        // IDs to remove (were assigned but now unchecked)
+        $idsToRemove = array_diff($currentAssignments, $this->assignedBusinessIds);
         
-        // Remove unselected business IDs
+        // IDs to add from new selections
+        $newIdsToAdd = [];
+        foreach ($this->newBusinessIds as $businessId => $ids) {
+            $newIdsToAdd = array_merge($newIdsToAdd, $ids);
+        }
+        
+        // Remove unchecked business IDs
         foreach ($idsToRemove as $businessIdId) {
             \DB::table('driver_business_ids')
                 ->where('driver_id', $driver->id)
@@ -144,32 +234,44 @@ class EditDriver extends Component
                 ->update(['transferred_at' => now()]);
         }
 
-        // Add new business IDs with transfer logic
-        foreach ($idsToAdd as $businessIdId) {
+        // Add new business IDs
+        foreach ($newIdsToAdd as $businessIdId) {
             // Check if assigned to another driver
             $existingAssignment = \DB::table('driver_business_ids')
                 ->where('business_id_id', $businessIdId)
                 ->where('transferred_at', null)
                 ->first();
 
-            if ($existingAssignment) {
-                // Transfer from previous driver (only if it's not already assigned to this driver)
-                if ($existingAssignment->driver_id != $driver->id) {
-                    \DB::table('driver_business_ids')
-                        ->where('business_id_id', $businessIdId)
-                        ->where('transferred_at', null)
-                        ->update(['transferred_at' => now()]);
-                    
-                    $previousDriverId = $existingAssignment->driver_id;
-                } else {
-                    $previousDriverId = null;
-                }
-            } else {
-                $previousDriverId = null;
+            $previousDriverId = null;
+
+            if ($existingAssignment && $existingAssignment->driver_id != $driver->id) {
+                // Transfer from previous driver
+                \DB::table('driver_business_ids')
+                    ->where('business_id_id', $businessIdId)
+                    ->where('transferred_at', null)
+                    ->update(['transferred_at' => now()]);
+                
+                $previousDriverId = $existingAssignment->driver_id;
             }
 
-            // Assign to current driver (only if not already assigned)
-            if (!$existingAssignment || $existingAssignment->driver_id != $driver->id) {
+            // Check if this driver had this ID before
+            $oldAssignment = \DB::table('driver_business_ids')
+                ->where('driver_id', $driver->id)
+                ->where('business_id_id', $businessIdId)
+                ->whereNotNull('transferred_at')
+                ->first();
+
+            if ($oldAssignment) {
+                // Reactivate old assignment
+                \DB::table('driver_business_ids')
+                    ->where('id', $oldAssignment->id)
+                    ->update([
+                        'transferred_at' => null,
+                        'assigned_at' => now(),
+                        'previous_driver_id' => $previousDriverId
+                    ]);
+            } else {
+                // Create new assignment
                 $driver->businessIds()->attach($businessIdId, [
                     'assigned_at' => now(),
                     'previous_driver_id' => $previousDriverId

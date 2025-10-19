@@ -15,11 +15,6 @@ class EditCoordinatorReport extends Component
     public string $main_menu = 'Coordinator Report';
     public string $menu = 'Edit Coordinator Report';
 
-    public function onDriverChange()
-    {
-        $this->resetBusinessData();
-    }
-
     public function update(){
         $validated = $this->validations();
         $validated['selectedBusinessIds'] = $this->selectedBusinessIds;
@@ -42,27 +37,38 @@ class EditCoordinatorReport extends Component
         session()->flash('success', translate('Coordinator Report Updated Successfully!'));
         return $this->redirectRoute('coordinator-report.index', navigate:true);
     }
-public function toggleBusinessId($businessIdValue)
-{
-    if (in_array($businessIdValue, $this->selectedBusinessIds)) {
-        // Remove if already selected
-        $this->selectedBusinessIds = array_filter($this->selectedBusinessIds, function($id) use ($businessIdValue) {
-            return $id != $businessIdValue;
-        });
-    } else {
-        // Add if not selected
-        $this->selectedBusinessIds[] = $businessIdValue;
+
+    // Add this method to handle individual checkbox changes
+    public function toggleBusinessId($businessIdValue, $checked)
+    {
+        if ($checked) {
+            // Add to selectedBusinessIds if checked
+            if (!in_array($businessIdValue, $this->selectedBusinessIds)) {
+                $this->selectedBusinessIds[] = $businessIdValue;
+            }
+        } else {
+            // Remove from selectedBusinessIds if unchecked
+            $this->selectedBusinessIds = array_filter($this->selectedBusinessIds, function($id) use ($businessIdValue) {
+                return $id != $businessIdValue;
+            });
+        }
+        
+        // Re-index array
+        $this->selectedBusinessIds = array_values($this->selectedBusinessIds);
+        
+        // Initialize form data
+        $this->initializeFormData();
     }
-    
-    // Reinitialize form data
-    $this->initializeFormData();
-}
+
     public function render()
     {
         $main_menu = $this->main_menu;
         $menu = $this->menu;
         $drivers = $this->driverService->all();
-        $businesses = $this->businessService->all();
+        
+        // Use availableBusinesses instead of all businesses
+        $businesses = !empty($this->driver_id) ? $this->availableBusinesses : collect([]);
+        
         $businesses_with_fields = $this->businesses_with_fields;
         return view('livewire.dms.coordinator-report.edit-coordinator-report', compact('main_menu', 'menu', 'drivers', 'businesses', 'businesses_with_fields'));
     }

@@ -1,4 +1,10 @@
 <div>
+<style>
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #722C81;
+    border: 1px solid #722C81;
+}
+</style>
     <x-layouts.breadcrumb
         :main_menu="$main_menu"
         :menu="$menu"
@@ -200,81 +206,96 @@
 
 
 
-                    <x-ui.row>
-                        <x-ui.col class="mb-3 col-lg-12 col-md-12">
-                            <x-form.label for="" name="Select Business"/>
-                        </x-ui.col>
-                    </x-ui.row>
-                    <x-ui.row class="px-10">
-                           <!-- Begin: Business Card -->
-                           @foreach ($businesses as $business)
-                                <div class="mb-3 col-2 form-check form-check-secondary">
-                                    <input class="form-check-input"
-                                        type="checkbox"
-                                        id="business_{{$business['id']}}"
-                                        value="{{ $business['id'] }}"
-                                        wire:model="business_ids"
-                                        wire:change="handleBusinessSelection"
-                                    />
-                                    <label class="form-check-label" for="business_{{$business['id']}}">
-                                        {{ $business['name'] }}
-                                    </label>
-                                </div>
+                    <!-- Business Selection with Dynamic Select2 Dropdowns -->
+<x-ui.row>
+    <x-ui.col class="mb-3 col-lg-12 col-md-12">
+        <x-form.label for="" name="Select Plaform & IDs"/>
+    </x-ui.col>
+</x-ui.row>
+<x-ui.row class="px-10">
+    @foreach ($businesses as $business)
+        <div class="mb-3 col-6">
+            <div class="form-check form-check-secondary">
+                <input class="form-check-input"
+                    type="checkbox"
+                    id="business_{{$business['id']}}"
+                    value="{{ $business['id'] }}"
+                    wire:model.live="business_ids"
+                />
+                <label class="form-check-label" for="business_{{$business['id']}}">
+                    {{ $business['name'] }}
+                </label>
+            </div>
+            
+            <!-- Select2 Dropdown - Shows only when checkbox is checked -->
+            @if(in_array($business['id'], $business_ids ?? []))
+                <div class="mt-2" x-data="{ businessId: {{ $business['id'] }} }" x-init="
+                    $nextTick(() => {
+                        $('#business_ids_{{ $business['id'] }}').select2({
+                            placeholder: 'Select Platform IDs for {{ $business['name'] }}',
+                            allowClear: true,
+                            width: '100%'
+                        }).on('change', function() {
+                            let selected = $(this).val() || [];
+                            @this.updateSelectedBusinessIds({{ $business['id'] }}, selected);
+                        });
+                    });
+                ">
+                    <select 
+                        id="business_ids_{{ $business['id'] }}"
+                        class="form-control select2-business-ids"
+                        multiple="multiple"
+                        style="width: 100%"
+                    >
+                        @if(isset($availableBusinessIds[$business['id']]))
+                            @foreach($availableBusinessIds[$business['id']] as $id)
+                                @php
+                                    $currentDriver = $id->currentDriver();
+                                    $isAssigned = !is_null($currentDriver);
+                                @endphp
+                                <option 
+                                    value="{{ $id->id }}"
+                                    @if(in_array($id->id, $selectedBusinessIds[$business['id']] ?? []))
+                                        selected
+                                    @endif
+                                >
+                                    {{ $id->value }}
+                                    @if($isAssigned)
+                                        (Assigned to: {{ $currentDriver->name }})
+                                    @endif
+                                </option>
                             @endforeach
-                            <x-ui.alert error="business_ids"/>
-                        <!-- End: Business Card -->
-                    </x-ui.row>
-                    <!-- Business IDs Selection (Show when businesses are selected) -->
-                    @if(!empty($availableBusinessIds))
-                        <x-ui.row>
-                            <x-ui.col class="mb-1 col-lg-12 col-md-12">
-                                <x-form.label for="" name="Select Business IDs"/>
-                            </x-ui.col>
-                        </x-ui.row>
-                        
-                        @foreach($availableBusinessIds as $businessId => $businessIds)
-                            @if($businessIds->count() > 0)
-                                <x-ui.row class="mb-2">
-                                    <x-ui.col class="mb-2 col-lg-12">
-                                        <h6 class="text-muted">{{ $businesses->firstWhere('id', $businessId)->name }} - All Available IDs</h6>
-                                        <div class="row">
-                                            @foreach($businessIds as $id)
-                                                @php
-                                                    $currentDriver = $id->currentDriver();
-                                                    $isAssigned = !is_null($currentDriver);
-                                                @endphp
-                                                <div class="col-6 mb-2">
-                                                    <div class="form-check">
-                                                        <input class="form-check-input"
-                                                            type="checkbox"
-                                                            id="business_id_{{ $id->id }}"
-                                                            value="{{ $id->id }}"
-                                                            wire:model="selectedBusinessIds"
-                                                        />
-                                                        <label class="form-check-label {{ $isAssigned ? 'text-warning' : '' }}" for="business_id_{{ $id->id }}">
-                                                            {{ $id->value }}
-                                                            @if($isAssigned)
-                                                                <small class="text-muted">(Currently assigned to: {{ $currentDriver->name }})</small>
-                                                            @endif
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    </x-ui.col>
-                                </x-ui.row>
-                            @else
-                                <x-ui.row class="mb-2">
-                                    <x-ui.col class="col-lg-12">
-                                        <div class="alert alert-warning">
-                                            No Business IDs available for {{ $businesses->firstWhere('id', $businessId)->name }}
-                                        </div>
-                                    </x-ui.col>
-                                </x-ui.row>
-                            @endif
-                        @endforeach
-                        <x-ui.alert error="selectedBusinessIds"/>
-                    @endif
+                        @endif
+                    </select>
+                </div>
+            @endif
+        </div>
+    @endforeach
+    <x-ui.alert error="business_ids"/>
+</x-ui.row>
+
+@push('scripts')
+<script>
+    document.addEventListener('livewire:init', () => {
+        Livewire.hook('morph.updated', ({ el, component }) => {
+            // Reinitialize Select2 after Livewire updates
+            $('.select2-business-ids').each(function() {
+                if (!$(this).hasClass('select2-hidden-accessible')) {
+                    let businessId = $(this).attr('id').replace('business_ids_', '');
+                    $(this).select2({
+                        placeholder: 'Select Platform IDs',
+                        allowClear: true,
+                        width: '100%'
+                    }).on('change', function() {
+                        let selected = $(this).val() || [];
+                        @this.updateSelectedBusinessIds(parseInt(businessId), selected);
+                    });
+                }
+            });
+        });
+    });
+</script>
+@endpush
 
                     <!-- Begin: Remarks Card -->
                     <x-ui.col class="mb-3">

@@ -7,11 +7,11 @@ use App\Models\BusinessId;
 use Livewire\Component;
 use Livewire\Attributes\Title;
 
-#[Title('Create Business ID')]
+#[Title('Create Platform')]
 class CreateBusinessId extends Component
 {
     public string $main_menu = 'Business';
-    public string $menu = 'Create Business ID';
+    public string $menu = 'Create Platform';
     
     public $business_id;
     public $value;
@@ -37,8 +37,8 @@ class CreateBusinessId extends Component
     {
         return [
             'business_id.required' => 'Please select a business.',
-            'value.required' => 'Please enter Business ID value.',
-            'value.unique' => 'This Business ID value already exists for the selected business.',
+            'value.required' => 'Please enter Platform value.',
+            'value.unique' => 'This Platform value already exists for the selected business.',
         ];
     }
 
@@ -60,7 +60,7 @@ class CreateBusinessId extends Component
             'is_active' => $this->is_active
         ]);
 
-        session()->flash('success', translate('Business ID Created Successfully!'));
+        session()->flash('success', translate('Platform Created Successfully!'));
         return $this->redirectRoute('businessid.index', navigate: true);
     }
 

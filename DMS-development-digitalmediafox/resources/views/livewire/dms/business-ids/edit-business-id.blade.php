@@ -7,16 +7,16 @@
     <x-ui.row>
         <x-ui.col class="col-lg-12">
             <form wire:submit='update'>
-                <!-- Begin: Business ID Details Card -->
+                <!-- Begin: Platform Details Card -->
                 <x-ui.card>
-                    <x-ui.card-header title="Business ID Details"/>
+                    <x-ui.card-header title="Platform Details"/>
                     <x-ui.card-body>
                         <x-ui.row>
                             <!-- Business Selection -->
                             <x-ui.col class="mb-3 col-lg-6 col-md-6">
-                                <x-form.label for="business_id" name="Business" :required="true"/>
+                                <x-form.label for="business_id" name="Platform" :required="true"/>
                                 <select class="form-control" id="business_id" wire:model="business_id">
-                                    <option value="">Select Business</option>
+                                    <option value="">Select Plarform</option>
                                     @foreach($businesses as $business)
                                     <option value="{{ $business->id }}">{{ $business->name }}</option>
                                     @endforeach
@@ -24,10 +24,10 @@
                                 <x-ui.alert error="business_id"/>
                             </x-ui.col>
 
-                            <!-- Business ID Value -->
+                            <!-- Platform Value -->
                             <x-ui.col class="mb-3 col-lg-6 col-md-6">
-                                <x-form.label for="value" name="Business ID Value" :required="true"/>
-                                <x-form.input-text id="value" placeholder="Enter Business ID Value" wire:model="value"/>
+                                <x-form.label for="value" name="Platform Id" :required="true"/>
+                                <x-form.input-text id="value" placeholder="Enter Platform Id" wire:model="value"/>
                                 <x-ui.alert error="value"/>
                             </x-ui.col>
 

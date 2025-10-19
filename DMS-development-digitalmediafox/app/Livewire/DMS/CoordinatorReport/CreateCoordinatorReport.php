@@ -15,15 +15,11 @@ class CreateCoordinatorReport extends Component
     public string $main_menu = 'Coordinator Report';
     public string $menu = 'Create Coordinator Report';
 
-    public function onDriverChange()
-    {
-        $this->resetBusinessData();
-    }
+    // *** REMOVED onDriverChange() method - now handled in trait ***
 
     public function create(){
         $validated = $this->validations();
         $validated['status'] = $this->status;
-        // Make sure we're passing the correct data
         $validated['selectedBusinessIds'] = $this->selectedBusinessIds;
         $validated['formData'] = $this->formData;
         $validated['files'] = $this->files;
@@ -43,16 +39,16 @@ class CreateCoordinatorReport extends Component
         return $this->redirectRoute('coordinator-report.index', navigate:true);
     }
 
-
-
     public function render()
     {
         $main_menu = $this->main_menu;
         $menu = $this->menu;
         $drivers = $this->driverService->all();
-        $businesses = $this->businessService->all();
+        
+        // *** CHANGED: Use availableBusinesses instead of all businesses ***
+        $businesses = !empty($this->driver_id) ? $this->availableBusinesses : collect([]);
+        
         $businesses_with_fields = $this->businesses_with_fields;
         return view('livewire.dms.coordinator-report.create-coordinator-report', compact('main_menu', 'menu', 'drivers', 'businesses', 'businesses_with_fields'));
     }
-
 }

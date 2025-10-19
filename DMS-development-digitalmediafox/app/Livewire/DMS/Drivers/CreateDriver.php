@@ -53,34 +53,62 @@ class CreateDriver extends Component
 
         return view('livewire.dms.drivers.create-driver', compact('main_menu', 'menu', 'businesses'));
     }
-
+    public function updatedBusinessIds()
+    {
+        $this->availableBusinessIds = [];
+        $newSelectedBusinessIds = [];
+        
+        if (!empty($this->business_ids)) {
+            foreach ($this->business_ids as $businessId) {
+                // Get only available (unassigned) business IDs
+                $availableIds = BusinessId::where('business_id', $businessId)
+                    ->where('is_active', true)
+                    ->whereDoesntHave('drivers', function($query) {
+                        $query->whereNull('transferred_at');
+                    })
+                    ->get();
+                
+                $this->availableBusinessIds[$businessId] = $availableIds;
+                
+                // Keep previously selected IDs for this business
+                if (isset($this->selectedBusinessIds[$businessId])) {
+                    $newSelectedBusinessIds[$businessId] = $this->selectedBusinessIds[$businessId];
+                }
+            }
+        }
+        
+        $this->selectedBusinessIds = $newSelectedBusinessIds;
+    }
+    public function updateSelectedBusinessIds($businessId, $selectedIds)
+    {
+        $this->selectedBusinessIds[$businessId] = $selectedIds;
+    }
     public function create(){
-        // * Applying Validations
         $validated = $this->validations();
         
-        // * Storing Image
         if (isset($this->image)) {
             $validated['image'] = $this->image->store('drivers', 'public');
         }
 
-        // * Creating Driver
         $driver = $this->driverService->create($validated);
 
-        // * Assign selected business IDs to driver (with transfer logic)
-        if (!empty($this->selectedBusinessIds)) {
-            foreach ($this->selectedBusinessIds as $businessIdId) {
+        // Flatten selectedBusinessIds array and assign to driver
+        $allSelectedIds = [];
+        foreach ($this->selectedBusinessIds as $businessId => $ids) {
+            $allSelectedIds = array_merge($allSelectedIds, $ids);
+        }
+        
+        if (!empty($allSelectedIds)) {
+            foreach ($allSelectedIds as $businessIdId) {
                 $businessId = BusinessId::find($businessIdId);
                 $previousDriver = $businessId->currentDriver();
                 
-                // If this ID is currently assigned to another driver, transfer it
                 if ($previousDriver) {
-                    // Update the existing assignment to mark as transferred
                     $businessId->drivers()->updateExistingPivot($previousDriver->id, [
                         'transferred_at' => now()
                     ]);
                 }
                 
-                // Create new assignment
                 $driver->businessIds()->attach($businessIdId, [
                     'assigned_at' => now(),
                     'previous_driver_id' => $previousDriver ? $previousDriver->id : null

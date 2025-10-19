@@ -25,108 +25,109 @@
                         </x-ui.col>
                         <!-- End: Driver Card -->
 
-                        <!-- Begin: Date of Birth Card -->
+                        <!-- Begin: Report Date Card -->
                         <x-ui.col class="mb-3 col-lg-3 col-md-3">
                             <x-form.label for="report_date" name="Report Date" :required="true"/>
                             <x-form.input-date  name="report_date" :placeholder="@translate('Report Date')"  wire:model='report_date'/>
                             <x-ui.alert error="report_date"/>
                         </x-ui.col>
-                        <!-- End: Date of Birth Card -->
+                        <!-- End: Report Date Card -->
 
-                         <!-- Begin: Status Card -->
-                         <x-ui.col class="mb-3 col-lg-3 col-md-3">
+                        <!-- Begin: Status Card -->
+                        <x-ui.col class="mb-3 col-lg-3 col-md-3">
                             <x-form.label for="status" name="Status"/>
                             <x-form.select class="form-select" wire:model='status'>
-                                    <x-form.option value="Pending" name="Pending"/>
-                                    <x-form.option value="Approved" name="Approved"/>
+                                <x-form.option value="Pending" name="Pending"/>
+                                <x-form.option value="Approved" name="Approved"/>
                             </x-form.select>
                             <x-ui.alert error="status"/>
                         </x-ui.col>
-                        <!-- End: Driver Card -->
-
+                        <!-- End: Status Card -->
                     </x-ui.row>
                     
                     <!-- Business Selection (Show when driver is selected) -->
                     @if($driver_id)
-                    <x-ui.row>
-                        <x-ui.col class="mb-3 col-lg-12 col-md-12">
-                            <x-form.label for="" name="Select Business Types"/>
-                        </x-ui.col>
-                    </x-ui.row>
-                    <x-ui.row class="px-10">
-                        <!-- Begin: Business Card -->
-                        @foreach ($businesses as $business)
-                            <div class="mb-3 col-2 form-check form-check-secondary">
-                                <input class="form-check-input"
-                                    type="checkbox"
-                                    id="business_{{$business['id']}}"
-                                    value="{{ $business['id'] }}"
-                                    wire:model.live="business_ids"
-                                    wire:change="handleBusinessSelection"
-                                />
-                                <label class="form-check-label" for="business_{{$business['id']}}">
-                                    {{ $business['name'] }}
-                                </label>
-                            </div>
-                        @endforeach
-                        <x-ui.alert error="business_ids"/>
-                        <!-- End: Business Card -->
-                    </x-ui.row>
+                        @if($businesses->count() > 0)
+                            <x-ui.row>
+                                <x-ui.col class="mb-3 col-lg-12 col-md-12">
+                                    <x-form.label for="" name="Select Business Types & IDs"/>
+                                </x-ui.col>
+                            </x-ui.row>
+                            
+                            <!-- Display businesses in columns with IDs below each -->
+                            <x-ui.row class="px-3">
+                                @foreach ($businesses as $business)
+                                    <x-ui.col class="mb-4 col-lg-4 col-md-6">
+                                        <div class="border rounded p-3 h-100">
+                                            <!-- Business Checkbox -->
+                                            <div class="form-check form-check-secondary mb-3">
+                                                <input class="form-check-input"
+                                                    type="checkbox"
+                                                    id="business_{{$business['id']}}"
+                                                    value="{{ $business['id'] }}"
+                                                    wire:model.live="business_ids"
+                                                    wire:change="handleBusinessSelection"
+                                                />
+                                                <label class="form-check-label fw-bold" for="business_{{$business['id']}}">
+                                                    {{ $business['name'] }}
+                                                </label>
+                                            </div>
+
+               <!-- Business IDs (Show when business is selected) -->
+@if(in_array($business['id'], $business_ids))
+    @if(isset($availableBusinessIds[$business['id']]) && $availableBusinessIds[$business['id']]->count() > 0)
+        <div class="mt-2 ps-3">
+            <small class="text-muted d-block mb-2">Available IDs:</small>
+            @foreach($availableBusinessIds[$business['id']] as $id)
+                <div class="form-check mb-2">
+                    <input class="form-check-input"
+                        type="checkbox"
+                        id="business_id_{{ $id->id }}"
+                        value="{{ $id->id }}"
+                        {{ in_array($id->id, $selectedBusinessIds) ? 'checked' : '' }}
+                        wire:change="toggleBusinessId({{ $id->id }}, $event.target.checked)"
+                    />
+                    <label class="form-check-label" for="business_id_{{ $id->id }}">
+                        {{ $id->value }}
+                    </label>
+                </div>
+            @endforeach
+        </div>
+    @else
+        <div class="alert alert-warning py-2 px-3 mb-0">
+            <small>No IDs available</small>
+        </div>
+    @endif
+@endif
+                                        </div>
+                                    </x-ui.col>
+                                @endforeach
+                            </x-ui.row>
+                            <x-ui.row>
+                                <x-ui.col class="col-lg-12">
+                                    <x-ui.alert error="business_ids"/>
+                                    <x-ui.alert error="selectedBusinessIds"/>
+                                </x-ui.col>
+                            </x-ui.row>
+                        @else
+                            <x-ui.row>
+                                <x-ui.col class="col-lg-12">
+                                    <div class="alert alert-warning">
+                                        No businesses with available IDs found for the selected driver
+                                    </div>
+                                </x-ui.col>
+                            </x-ui.row>
+                        @endif
                     @else
-                    <x-ui.row>
-                        <x-ui.col class="col-lg-12">
-                            <div class="alert alert-info">
-                                Please select a driver first to choose businesses
-                            </div>
-                        </x-ui.col>
-                    </x-ui.row>
+                        <x-ui.row>
+                            <x-ui.col class="col-lg-12">
+                                <div class="alert alert-info">
+                                    Please select a driver first to choose businesses
+                                </div>
+                            </x-ui.col>
+                        </x-ui.row>
                     @endif
 
-                    <!-- Business IDs Selection (Show when businesses are selected) -->
-@if(!empty($availableBusinessIds) && $driver_id && count($business_ids) > 0)
-    <x-ui.row>
-        <x-ui.col class="mb-1 col-lg-12 col-md-12">
-            <x-form.label for="" name="Select Business IDs"/>
-        </x-ui.col>
-    </x-ui.row>
-    
-    @foreach($availableBusinessIds as $businessTypeId => $businessIds)
-        @if($businessIds->count() > 0 && in_array($businessTypeId, $business_ids))
-            <x-ui.row class="mb-2">
-                <x-ui.col class="mb-2 col-lg-12">
-                    <h6 class="text-muted">{{ $businesses->firstWhere('id', $businessTypeId)->name }} - All Available IDs</h6>
-                    <div class="row">
-                        @foreach($businessIds as $id)
-                            <div class="col-6 mb-2">
-                                <div class="form-check">
-                                    <input class="form-check-input"
-                                        type="checkbox"
-                                        id="business_id_{{ $id->id }}"
-                                        value="{{ $id->id }}"
-                                        {{ in_array($id->id, $selectedBusinessIds) ? 'checked' : '' }}
-                                        wire:click="toggleBusinessId({{ $id->id }})"
-                                    />
-                                    <label class="form-check-label" for="business_id_{{ $id->id }}">
-                                        {{ $id->value }}
-                                    </label>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                </x-ui.col>
-            </x-ui.row>
-        @elseif(in_array($businessTypeId, $business_ids))
-            <x-ui.row class="mb-2">
-                <x-ui.col class="col-lg-12">
-                    <div class="alert alert-warning">
-                        No Business IDs available for {{ $businesses->firstWhere('id', $businessTypeId)->name }}
-                    </div>
-                </x-ui.col>
-            </x-ui.row>
-        @endif
-    @endforeach
-    <x-ui.alert error="selectedBusinessIds"/>
-@endif
                     </x-ui.card-body>
                 </x-ui.card>
                 <!-- End: Business Details -->
