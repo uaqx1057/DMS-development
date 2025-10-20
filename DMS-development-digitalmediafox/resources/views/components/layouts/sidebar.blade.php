@@ -34,10 +34,11 @@
                     @endif
 
                     @php
-                        $showModule = $module->operations->some(function ($operation) {
-                            return getModulePrivilege($operation->id) && $operation->is_view === 1;
-                        }) && $module->id !== 1;
-                    @endphp
+$showModule = $module->operations->some(function ($operation) use ($module) {
+    return getModulePrivilege($operation->id) || getModulePrivilege($module->id);
+}) && $module->id !== 1;
+@endphp
+
 
                     @if ($showModule)
                         <x-ui.sidebar.menu
@@ -49,13 +50,14 @@
                             :label="$module->name"
                         >
                             @foreach ($module->operations as $operation)
-                                @if (getModulePrivilege($operation->id) && $operation->is_view === 1)
+                                @if (getModulePrivilege($operation->id) || getModulePrivilege($module->id))
                                     <x-ui.sidebar.menu-item
                                         :label="$operation->name"
                                         :route="$operation->route"
                                         reload-page
                                     />
                                 @endif
+
                             @endforeach
                         </x-ui.sidebar.menu>
                     @endif
