@@ -206,10 +206,10 @@
 
 
 
-                    <!-- Business Selection with Dynamic Select2 Dropdowns -->
+        <!-- Business Selection with Dynamic Select2 Dropdowns -->
 <x-ui.row>
     <x-ui.col class="mb-3 col-lg-12 col-md-12">
-        <x-form.label for="" name="Select Plaform & IDs"/>
+        <x-form.label for="" name="Select Platform & IDs"/>
     </x-ui.col>
 </x-ui.row>
 <x-ui.row class="px-10">
@@ -229,23 +229,13 @@
             
             <!-- Select2 Dropdown - Shows only when checkbox is checked -->
             @if(in_array($business['id'], $business_ids ?? []))
-                <div class="mt-2" x-data="{ businessId: {{ $business['id'] }} }" x-init="
-                    $nextTick(() => {
-                        $('#business_ids_{{ $business['id'] }}').select2({
-                            placeholder: 'Select Platform IDs for {{ $business['name'] }}',
-                            allowClear: true,
-                            width: '100%'
-                        }).on('change', function() {
-                            let selected = $(this).val() || [];
-                            @this.updateSelectedBusinessIds({{ $business['id'] }}, selected);
-                        });
-                    });
-                ">
+                <div class="mt-2" wire:ignore>
                     <select 
                         id="business_ids_{{ $business['id'] }}"
                         class="form-control select2-business-ids"
                         multiple="multiple"
                         style="width: 100%"
+                        data-business-id="{{ $business['id'] }}"
                     >
                         @if(isset($availableBusinessIds[$business['id']]))
                             @foreach($availableBusinessIds[$business['id']] as $id)
@@ -277,20 +267,52 @@
 @push('scripts')
 <script>
     document.addEventListener('livewire:init', () => {
+        // Function to initialize Select2
+        function initializeSelect2(element) {
+            if (!$(element).hasClass('select2-hidden-accessible')) {
+                let businessId = $(element).data('business-id');
+                $(element).select2({
+                    placeholder: 'Select Platform IDs',
+                    allowClear: true,
+                    width: '100%'
+                }).on('change', function() {
+                    let selected = $(this).val() || [];
+                    @this.updateSelectedBusinessIds(parseInt(businessId), selected);
+                });
+            }
+        }
+
+        // Initialize all existing Select2 elements
+        $('.select2-business-ids').each(function() {
+            initializeSelect2(this);
+        });
+
+        // Reinitialize Select2 after Livewire updates
         Livewire.hook('morph.updated', ({ el, component }) => {
-            // Reinitialize Select2 after Livewire updates
-            $('.select2-business-ids').each(function() {
-                if (!$(this).hasClass('select2-hidden-accessible')) {
-                    let businessId = $(this).attr('id').replace('business_ids_', '');
-                    $(this).select2({
-                        placeholder: 'Select Platform IDs',
-                        allowClear: true,
-                        width: '100%'
-                    }).on('change', function() {
-                        let selected = $(this).val() || [];
-                        @this.updateSelectedBusinessIds(parseInt(businessId), selected);
+            // Small delay to ensure DOM is ready
+            setTimeout(() => {
+                $('.select2-business-ids').each(function() {
+                    // Destroy existing Select2 if it exists
+                    if ($(this).hasClass('select2-hidden-accessible')) {
+                        $(this).select2('destroy');
+                    }
+                    // Reinitialize
+                    initializeSelect2(this);
+                });
+            }, 100);
+        });
+
+        // Also listen for Livewire updates
+        Livewire.hook('commit', ({ component, commit, respond, succeed, fail }) => {
+            succeed(({ snapshot, effect }) => {
+                setTimeout(() => {
+                    $('.select2-business-ids').each(function() {
+                        if ($(this).hasClass('select2-hidden-accessible')) {
+                            $(this).select2('destroy');
+                        }
+                        initializeSelect2(this);
                     });
-                }
+                }, 100);
             });
         });
     });

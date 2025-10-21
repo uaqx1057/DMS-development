@@ -347,29 +347,45 @@
             </x-ui.col>
         </x-ui.row>
 
-        @push('scripts')
-        <script>
-            document.addEventListener('livewire:init', () => {
-                Livewire.hook('morph.updated', ({ el, component }) => {
-                    // Reinitialize Select2 after Livewire updates
-                    $('.select2-new-business-ids').each(function() {
-                        if (!$(this).hasClass('select2-hidden-accessible')) {
-                            let businessId = $(this).attr('id').replace('new_business_ids_', '');
-                            $(this).select2({
-                                placeholder: 'Select Available Platform IDs',
-                                allowClear: true,
-                                width: '100%'
-                            }).on('change', function() {
-                                let selected = $(this).val() || [];
-                                @this.updateNewBusinessIds(parseInt(businessId), selected);
-                            });
-                        }
-                    });
-                });
-            });
-        </script>
-        @endpush
+
         @endif
+        @push('scripts')
+<script>
+document.addEventListener('livewire:init', () => {
+    // Function to initialize all select2 dropdowns
+    function initSelect2() {
+        $('.select2-new-business-ids').each(function() {
+            let $el = $(this);
+            if (!$el.hasClass("select2-hidden-accessible")) {
+                let businessId = $el.attr('id').replace('new_business_ids_', '');
+                $el.select2({
+                    placeholder: 'Select Available Platform IDs',
+                    allowClear: true,
+                    width: '100%'
+                }).on('change', function () {
+                    let selected = $(this).val() || [];
+                    @this.updateNewBusinessIds(parseInt(businessId), selected);
+                });
+            }
+        });
+    }
+
+    // Initialize when Livewire first loads
+    initSelect2();
+
+    // Reinitialize after DOM updates
+    Livewire.hook('morph.updated', (context) => {
+        initSelect2();
+    });
+
+    // Also handle custom Livewire event if needed
+    Livewire.on('reinit-select2', () => {
+        initSelect2();
+    });
+});
+</script>
+@endpush
+
         <!-- End: Add New Platform IDs Section -->
 
         <x-ui.alert error="business_ids"/>
