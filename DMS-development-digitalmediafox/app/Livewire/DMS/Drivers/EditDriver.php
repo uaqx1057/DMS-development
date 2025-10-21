@@ -210,22 +210,22 @@ class EditDriver extends Component
             return;
         }
         
-        // Get current assignments (only non-transferred)
+        // Get current active assignments
         $currentAssignments = $driver->businessIds()
             ->wherePivot('transferred_at', null)
             ->pluck('business_ids.id')
             ->toArray();
         
-        // IDs to remove (were assigned but now unchecked)
+        // Determine which IDs were unchecked (to close them)
         $idsToRemove = array_diff($currentAssignments, $this->assignedBusinessIds);
         
-        // IDs to add from new selections
+        // Determine new IDs to add
         $newIdsToAdd = [];
         foreach ($this->newBusinessIds as $businessId => $ids) {
             $newIdsToAdd = array_merge($newIdsToAdd, $ids);
         }
         
-        // Remove unchecked business IDs
+        // ✅ Mark unchecked business IDs as transferred (close active assignments)
         foreach ($idsToRemove as $businessIdId) {
             \DB::table('driver_business_ids')
                 ->where('driver_id', $driver->id)
@@ -234,9 +234,9 @@ class EditDriver extends Component
                 ->update(['transferred_at' => now()]);
         }
 
-        // Add new business IDs
+        // ✅ Always create new assignment records
         foreach ($newIdsToAdd as $businessIdId) {
-            // Check if assigned to another driver
+            // Check if the ID is currently assigned to another driver
             $existingAssignment = \DB::table('driver_business_ids')
                 ->where('business_id_id', $businessIdId)
                 ->where('transferred_at', null)
@@ -244,39 +244,25 @@ class EditDriver extends Component
 
             $previousDriverId = null;
 
+            // If assigned to another driver, mark that assignment as transferred
             if ($existingAssignment && $existingAssignment->driver_id != $driver->id) {
-                // Transfer from previous driver
                 \DB::table('driver_business_ids')
                     ->where('business_id_id', $businessIdId)
                     ->where('transferred_at', null)
                     ->update(['transferred_at' => now()]);
-                
+
                 $previousDriverId = $existingAssignment->driver_id;
             }
 
-            // Check if this driver had this ID before
-            $oldAssignment = \DB::table('driver_business_ids')
-                ->where('driver_id', $driver->id)
-                ->where('business_id_id', $businessIdId)
-                ->whereNotNull('transferred_at')
-                ->first();
+            // ❌ OLD (reactivate old assignment)
+            // -> removed completely
 
-            if ($oldAssignment) {
-                // Reactivate old assignment
-                \DB::table('driver_business_ids')
-                    ->where('id', $oldAssignment->id)
-                    ->update([
-                        'transferred_at' => null,
-                        'assigned_at' => now(),
-                        'previous_driver_id' => $previousDriverId
-                    ]);
-            } else {
-                // Create new assignment
-                $driver->businessIds()->attach($businessIdId, [
-                    'assigned_at' => now(),
-                    'previous_driver_id' => $previousDriverId
-                ]);
-            }
+            // ✅ NEW (always create a fresh record)
+            $driver->businessIds()->attach($businessIdId, [
+                'assigned_at' => now(),
+                'previous_driver_id' => $previousDriverId,
+            ]);
         }
     }
+
 }
