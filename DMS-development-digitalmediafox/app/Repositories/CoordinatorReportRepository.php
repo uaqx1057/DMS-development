@@ -19,105 +19,103 @@ class CoordinatorReportRepository implements CoordinatorReportInterface
             'businesses',
         ]);
 
-        // Filter by driver_id
+        // 🔹 Filter by driver_id
         if (!empty($filters['driver_id'])) {
             $query->where('driver_id', $filters['driver_id']);
         }
 
-        // Filter by date_range
+        // 🔹 Filter by date_range
         if (!empty($filters['date_range'])) {
             $dates = explode(' to ', $filters['date_range']);
             $query->whereBetween('report_date', [
                 $dates[0],
-                $dates[1] ?? $dates[0], // Handle single date or range
+                $dates[1] ?? $dates[0],
             ]);
         } else {
             $query->whereDate('report_date', now()->format('Y-m-d'));
         }
 
-        // Filter by business_id via report_fields
-        if (!empty($filters['business_id'])) {
-            $query->whereHas('report_fields', function ($q) use ($filters) {
-                $q->where('business_id', $filters['business_id']);
-            });
-        }
-
-        // Filter by branch_id via driver relation
+        // 🔹 Filter by branch_id via driver relation
         if (!empty($filters['branch_id'])) {
             $query->whereHas('driver.branch', function ($q) use ($filters) {
                 $q->where('id', $filters['branch_id']);
             });
         }
 
+        // ✅ Run query first to get base reports
         $coordinatorReports = $query->get();
 
+        // Collect all field names for dynamic columns
         $fields = $coordinatorReports
             ->pluck('report_fields.*.field.name')
             ->flatten()
             ->unique()
             ->toArray();
 
-        // 🆕 CREATE SEPARATE RECORDS FOR EACH BUSINESS VALUE
+        // 🧩 Build expanded records per business_id_value
         $expandedResults = new Collection();
-        
+
         foreach ($coordinatorReports as $report) {
-            // Group report fields by business_id_value
             $groupedFields = $report->report_fields->groupBy('business_id_value');
-            
+
             foreach ($groupedFields as $businessIdValue => $fieldsGroup) {
-                $businessId = \App\Models\BusinessId::find($businessIdValue);
-                
+                // 🔹 CRITICAL FIX: Apply business_id filter at expansion level
+                if (!empty($filters['business_id'])) {
+                    $firstField = $fieldsGroup->first();
+                    if (!$firstField || $firstField->business_id != $filters['business_id']) {
+                        continue;
+                    }
+                }
+
+                // 🔹 CRITICAL FIX: Apply business_id_value filter at expansion level
+                if (!empty($filters['business_id_value']) && $businessIdValue != $filters['business_id_value']) {
+                    continue;
+                }
+
+                $businessId = BusinessId::find($businessIdValue);
+
                 if ($businessId) {
                     $reportModel = (new CoordinatorReport())->fill($report->toArray());
-                    
                     $reportModel->setAttribute('id', $report->id);
                     $reportModel->setAttribute('driver_iqama', optional($report->driver)->iqaama_number ?? 'N/A');
                     $reportModel->setAttribute('driver_name', optional($report->driver)->name ?? 'N/A');
                     $reportModel->setAttribute('branch_name', optional($report->driver->branch)->name ?? 'N/A');
                     $reportModel->setAttribute('report_status', $report->status ?? 'Unknown');
-                    
-                    // 🆕 SET BUSINESS NAME WITH BOTH BUSINESS NAME AND VALUE
+
                     $businessTypeName = $businessId->business->name ?? 'Unknown Business';
                     $reportModel->setAttribute('business_name', "{$businessTypeName} ({$businessId->value})");
-                    
-                    // 🆕 CALCULATE FIELD VALUES ONLY FOR THIS BUSINESS VALUE
+
                     foreach ($fields as $field) {
                         $totalFieldValue = $fieldsGroup
                             ->where('field.name', $field)
                             ->pluck('value')
                             ->map(fn($value) => is_numeric($value) ? (float) $value : 0)
                             ->sum();
-                            
                         $reportModel->setAttribute($field, $totalFieldValue);
                     }
-                    
+
                     $expandedResults->push($reportModel);
                 }
             }
-            
-            // 🆕 IF NO BUSINESS FIELDS, STILL ADD THE REPORT WITH DEFAULT VALUES
-            if ($report->report_fields->isEmpty()) {
+
+            // Add default record if no fields found AND no business filters are applied
+            if ($report->report_fields->isEmpty() && empty($filters['business_id']) && empty($filters['business_id_value'])) {
                 $reportModel = (new CoordinatorReport())->fill($report->toArray());
-                
                 $reportModel->setAttribute('id', $report->id);
                 $reportModel->setAttribute('driver_iqama', optional($report->driver)->iqaama_number ?? 'N/A');
                 $reportModel->setAttribute('driver_name', optional($report->driver)->name ?? 'N/A');
                 $reportModel->setAttribute('branch_name', optional($report->driver->branch)->name ?? 'N/A');
                 $reportModel->setAttribute('report_status', $report->status ?? 'Unknown');
                 $reportModel->setAttribute('business_name', 'N/A');
-                
                 foreach ($fields as $field) {
                     $reportModel->setAttribute($field, 0);
                 }
-                
                 $expandedResults->push($reportModel);
             }
         }
 
         $currentPage = $currentPage ?: LengthAwarePaginator::resolveCurrentPage();
-        $paginatedItems = $this->paginateCollection($expandedResults, $perPage, $currentPage);
-
-        return $paginatedItems;
+        return $this->paginateCollection($expandedResults, $perPage, $currentPage);
     }
 
 

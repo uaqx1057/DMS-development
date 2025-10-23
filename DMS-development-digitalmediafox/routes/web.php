@@ -8,6 +8,7 @@ use App\Livewire\DMS\Drivers\{CreateDriver, DriverList, EditDriver, ShowDriver};
 use App\Livewire\DMS\Businesses\{BusinessList, CreateBusiness, EditBusiness};
 use App\Livewire\DMS\BusinessesId\{BusinessIdList, CreateBusinessId, EditBusinessId};
 use App\Livewire\DMS\CoordinatorReport\{CoordinatorReportList, CreateCoordinatorReport, EditCoordinatorReport};
+use App\Livewire\DMS\PlatformIdsReport\{PlatformIdsReportList};
 use App\Livewire\DMS\Fields\{FieldList, CreateField};
 use App\Livewire\DMS\Payroll\PayrollList;
 use App\Livewire\DMS\RevenueReporting\RevenueReportingList;
@@ -121,6 +122,10 @@ Route::get('/orders', OrderDetails::class)->name('orders.index');
             Route::get('/create', CreateCoordinatorReport::class)->name('create')->middleware('permission:' . config('const.COORDINATORREPORT') . ',' . config('const.ADD'));
             Route::get('/edit/{id}', EditCoordinatorReport::class)->name('edit')->middleware('permission:' . config('const.COORDINATORREPORT') . ',' . config('const.EDIT'));
         });
+        // Platform Ids Reports Routes
+        Route::prefix('platform-ids-report')->as('platform-ids-report.')->group(function () {
+            Route::get('/', PlatformIdsReportList::class)->name('index')->middleware('permission:' . config('const.PLATFORMIDSREPORT') . ',' . config('const.VIEW'));
+         });
 
         // Payroll Routes
         Route::prefix('payroll')->as('payroll.')->group(function () {

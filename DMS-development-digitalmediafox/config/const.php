@@ -10,6 +10,7 @@ return [
     'BUSINESSES' => 7,
     'BUSINESSESID' => 8,
     'COORDINATORREPORT' => 9,
+    'PLATFORMIDSREPORT' => 16,
     'PAYROLL' => 10,
     'REVENUEREPORTING' => 11,
     'BUSINESSFIELDS' => 12,
