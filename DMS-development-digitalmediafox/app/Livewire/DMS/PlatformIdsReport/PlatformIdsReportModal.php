@@ -1,24 +1,30 @@
 <?php
 
-namespace App\Livewire\DMS\CoordinatorReport;
+namespace App\Livewire\DMS\PlatformIdsReport;
 
-use App\Models\CoordinatorReport;
 use Livewire\Component;
+use Barryvdh\DomPDF\Facade\Pdf;
 
-class CoordinatorReportModal extends Component
+class PlatformIdsReportModal extends Component
 {
-
     public $showModal = false;
-    public $reportData;
-    public $status;
+    public $businessIdValue;
+    public $reports = [];
+    public $businessName;
+    public $platformId;
 
-    protected $listeners = ['openModal' => 'show'];
+    protected $listeners = ['openPlatformIdModal' => 'show'];
 
-    public function show($reportData)
+    public function show($data)
     {
-        $this->reportData = $reportData;
-        // dd($reportData);
-        $this->status = $reportData['status'] ?? 'Pending';
+        $this->businessIdValue = $data['business_id_value'];
+        $this->reports = $data['reports'];
+        
+        // Get business name and platform ID from first report
+        if (!empty($this->reports)) {
+            $this->businessName = $this->reports[0]['business_name'] ?? 'Unknown';
+            $this->platformId = $this->reports[0]['platform_id'] ?? 'N/A';
+        }
 
         $this->showModal = true;
     }
@@ -26,20 +32,36 @@ class CoordinatorReportModal extends Component
     public function closeModal()
     {
         $this->showModal = false;
-        $this->reset('reportData'); // Reset data when closing the modal
+        $this->reset(['reports', 'businessIdValue', 'businessName', 'platformId']);
     }
 
-    // public function updateStatus()
-    // {
-    //     // Update the status in the database
-    //     CoordinatorReport::where('id', $this->reportData['id'])->update([
-    //         'status' => $this->status,
-    //     ]);
+    /**
+     * Export individual report as PDF
+     */
+    public function exportReportPdf($reportId)
+    {
+        // Find the specific report
+        $report = collect($this->reports)->firstWhere('id', $reportId);
+        
+        if (!$report) {
+            session()->flash('error', 'Report not found');
+            return;
+        }
 
-    //     // Send success feedback and close modal
-    //     session()->flash('success', 'Status updated successfully1111');
-    //     return $this->redirectRoute('coordinator-report.index', navigate:true);
-    // }
+        // Generate PDF
+        $pdf = Pdf::loadView('exports.single-platform-report', [
+            'report' => $report,
+            'businessName' => $this->businessName,
+            'platformId' => $this->platformId,
+        ]);
+
+        $filename = 'platform-report-' . $report['driver']['name'] . '-' . $report['report_date'] . '.pdf';
+
+        return response()->streamDownload(
+            fn () => print($pdf->output()),
+            $filename
+        );
+    }
 
     public function render()
     {

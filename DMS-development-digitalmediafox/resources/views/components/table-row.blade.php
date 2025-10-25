@@ -13,7 +13,23 @@
        {!! $this->customFormat($column, $column['hasRelation'] ? data_get($item, $column['column'].'.'.$column['columnRelation']) : data_get($item, $column['column'])) !!}
 
         @elseif ($column['column'] === 'view')
-            <button class="btn btn-primary btn-sm" wire:click="openReportModal({{ $item['id'] }})">View Report</button>
+            @if(isset($item->business_id_value))
+                {{-- For Platform IDs Report - pass business_id_value --}}
+                <button 
+                    wire:click="openReportModal({{ $item->business_id_value }})" 
+                    class="btn btn-sm btn-primary"
+                    title="View Reports">
+                    <i class="fas fa-eye"></i> View
+                </button>
+            @elseif(isset($item->id))
+                {{-- For regular Coordinator Report - pass report id --}}
+                <button 
+                    wire:click="openReportModal({{ $item->id }})" 
+                    class="btn btn-sm btn-primary"
+                    title="View Report">
+                    <i class="fas fa-eye"></i> View
+                </button>
+            @endif
         @elseif ($column['column'] === 'action')
             <div class="flex items-center justify-center gap-1">
                 <div class="dropdown d-inline-block">
