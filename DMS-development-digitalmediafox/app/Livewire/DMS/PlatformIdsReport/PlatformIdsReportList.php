@@ -190,10 +190,20 @@ class PlatformIdsReportList extends Component
             ['label' => 'Status', 'column' => 'report_status', 'isData' => true,'hasRelation'=> false, 'isHtml' => true],
         ];
 
+        // Prepare detailed per-business reports so the view can render per-driver breakdowns
+        $details = [];
+        foreach ($coordinatorReports as $report) {
+            $biv = data_get($report, 'business_id_value');
+            if ($biv) {
+                $details[$biv] = $this->platformIdReportService->getReportsByBusinessIdValue($biv)->toArray();
+            }
+        }
+
         $pdf = Pdf::loadView('exports.platform-ids-report', [
             'coordinatorReports' => $coordinatorReports,
             'columns' => $columns,
-            'fields' => $fields
+            'fields' => $fields,
+            'details' => $details,
         ]);
 
         $filename = 'platform-ids-report-list-' . now()->format('Y-m-d') . '.pdf';
