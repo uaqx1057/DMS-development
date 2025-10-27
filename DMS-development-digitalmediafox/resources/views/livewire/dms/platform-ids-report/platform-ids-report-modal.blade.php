@@ -23,11 +23,18 @@
                                                 </h6>
                                             </div>
                                             <div class="text-end col-md-4">
-                                                <button 
-                                                    wire:click="exportReportPdf({{ $report['id'] }})" 
-                                                    class="btn btn-sm btn-success">
-                                                    <i class="fas fa-file-pdf"></i> Export PDF
-                                                </button>
+                                                <div class="btn-group">
+                                                    <button 
+                                                        wire:click="exportReportPdf({{ $report['id'] }})" 
+                                                        class="btn btn-sm btn-danger">
+                                                        <i class="fas fa-file-pdf"></i> Export PDF
+                                                    </button>
+                                                    <button 
+                                                        wire:click="exportReportCsv({{ $report['id'] }})" 
+                                                        class="btn btn-sm btn-success">
+                                                        <i class="fas fa-file-excel"></i> Export CSV
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

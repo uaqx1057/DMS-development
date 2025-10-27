@@ -63,6 +63,73 @@ class PlatformIdsReportModal extends Component
         );
     }
 
+    /**
+     * Export individual report as CSV
+     */
+    public function exportReportCsv($reportId)
+    {
+        // Find the specific report
+        $report = collect($this->reports)->firstWhere('id', $reportId);
+        
+        if (!$report) {
+            session()->flash('error', 'Report not found');
+            return;
+        }
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename=platform-report-' . $report['driver']['name'] . '-' . $report['report_date'] . '.csv',
+        ];
+
+        $callback = function() use ($report) {
+            $file = fopen('php://output', 'w');
+
+            // Write report header
+            fputcsv($file, ['Platform Report Details']);
+            fputcsv($file, []);
+            
+            // Basic Information
+            fputcsv($file, ['Basic Information']);
+            fputcsv($file, ['Platform Name', $this->businessName]);
+            fputcsv($file, ['Platform ID', $this->platformId]);
+            fputcsv($file, ['Report Date', \Carbon\Carbon::parse($report['report_date'])->format('d-m-Y')]);
+            fputcsv($file, ['Driver Name', $report['driver']['name']]);
+            fputcsv($file, ['Driver Iqaama', $report['driver']['iqaama_number']]);
+            fputcsv($file, ['Branch', $report['branch']['name']]);
+            fputcsv($file, ['Status', $report['status']]);
+            fputcsv($file, []);
+
+            // Field Values
+            fputcsv($file, ['Report Values']);
+            fputcsv($file, ['Field', 'Value']);
+            
+            foreach ($report['field_values'] as $fieldName => $fieldData) {
+                if ($fieldData['type'] !== 'DOCUMENT') {
+                    fputcsv($file, [$fieldName, $fieldData['value']]);
+                }
+            }
+
+            // Document Section
+            $documentFields = array_filter($report['field_values'], fn($field) => $field['type'] === 'DOCUMENT');
+            if (!empty($documentFields)) {
+                fputcsv($file, []);
+                fputcsv($file, ['Document Attachments']);
+                fputcsv($file, ['Document Type', 'File Path']);
+                
+                foreach ($documentFields as $fieldName => $fieldData) {
+                    $files = json_decode($fieldData['value'], true) ?? [];
+                    foreach ($files as $file_path) {
+                        fputcsv($file, [$fieldName, asset('storage/' . $file_path)]);
+                    }
+                }
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
     public function render()
     {
         return view('livewire.dms.platform-ids-report.platform-ids-report-modal');

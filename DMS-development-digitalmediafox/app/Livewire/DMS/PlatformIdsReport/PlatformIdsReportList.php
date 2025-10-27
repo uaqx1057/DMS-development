@@ -213,4 +213,155 @@ class PlatformIdsReportList extends Component
             $filename
         );
     }
+
+    public function exportCsv()
+    {
+        $filters = [
+            'business_id_value' => $this->business_id_value,
+            'date_range' => $this->date_range,
+            'business_id' => $this->business_id,
+        ];
+
+        $coordinatorReports = $this->platformIdReportService->all($this->perPage, $this->page, $filters);
+        $details = [];
+        foreach ($coordinatorReports as $report) {
+            $biv = data_get($report, 'business_id_value');
+            if ($biv) {
+                $details[$biv] = $this->platformIdReportService->getReportsByBusinessIdValue($biv)->toArray();
+            }
+        }
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename=platform-ids-report-list-' . now()->format('Y-m-d') . '.csv',
+        ];
+
+        $callback = function() use ($coordinatorReports, $details) {
+            $file = fopen('php://output', 'w');
+            
+            // Write summary header
+            fputcsv($file, [
+                'Sr. No.',
+                'Date Range',
+                'Platform',
+                'Drivers',
+                'Branches',
+                'Total Orders',
+                'Total Bonus',
+                'Total Tips',
+                'Total Other Tips',
+                'Status'
+            ]);
+
+            // Write summary rows
+            foreach ($coordinatorReports as $index => $report) {
+                fputcsv($file, [
+                    $index + 1,
+                    $this->customFormat(['column' => 'date_range', 'format' => 'date'], $report->date_range),
+                    $report->business_name,
+                    strip_tags($report->assigned_drivers),
+                    strip_tags($report->branches),
+                    $report->{'Total Orders'},
+                    $report->{'Bonus'},
+                    $report->{'Tip'},
+                    $report->{'Other Tip'},
+                    strip_tags($report->report_status)
+                ]);
+
+                // Add a blank line before details
+                fputcsv($file, []);
+
+                // Write details header
+                fputcsv($file, [
+                    'No.',
+                    'Date',
+                    'Iqama Number',
+                    'Driver Name',
+                    'Business Name',
+                    'Branch Name',
+                    'Total Orders',
+                    'Bonus',
+                    'Tip',
+                    'Other Tip',
+                    'Status'
+                ]);
+
+                // Get and process details for this report
+                $biv = data_get($report, 'business_id_value');
+                $driverReports = data_get($details, $biv) ?: [];
+
+                if (!empty($driverReports)) {
+                    $groups = collect($driverReports)->groupBy(function($r) {
+                        return data_get($r, 'driver.id') ?? ('unknown_' . (data_get($r,'driver.name') ?? uniqid()));
+                    });
+
+                    foreach ($groups as $driverId => $group) {
+                        $driverTotal = [
+                            'orders' => 0,
+                            'bonus' => 0,
+                            'tips' => 0,
+                            'otherTips' => 0
+                        ];
+
+                        foreach ($group as $index => $dr) {
+                            // Write detail row
+                            $orders = data_get($dr, 'field_values.Total Orders.value', 0);
+                            $bonus = data_get($dr, 'field_values.Bonus.value', 0);
+                            $tips = data_get($dr, 'field_values.Tip.value', 0);
+                            $otherTips = data_get($dr, 'field_values.Other Tip.value', 0);
+
+                            fputcsv($file, [
+                                $index + 1,
+                                data_get($dr, 'report_date') ? \Carbon\Carbon::parse($dr['report_date'])->format('d-m-Y') : 'N/A',
+                                data_get($dr, 'driver.iqaama_number', 'N/A'),
+                                data_get($dr, 'driver.name', 'N/A'),
+                                data_get($dr, 'business_name', 'N/A'),
+                                data_get($dr, 'branch.name', 'N/A'),
+                                $orders,
+                                $bonus,
+                                $tips,
+                                $otherTips,
+                                $dr['status'] ?? 'N/A'
+                            ]);
+
+                            $driverTotal['orders'] += $orders;
+                            $driverTotal['bonus'] += $bonus;
+                            $driverTotal['tips'] += $tips;
+                            $driverTotal['otherTips'] += $otherTips;
+                        }
+
+                        // Write driver total
+                        $dates = collect($group)->pluck('report_date')->filter()->sort()->values();
+                        $from = $dates->first();
+                        $to = $dates->last();
+                        $dateRange = ($from ? \Carbon\Carbon::parse($from)->format('d-m-Y') : 'N/A') . ' - ' . 
+                                   ($to ? \Carbon\Carbon::parse($to)->format('d-m-Y') : 'N/A');
+
+                        fputcsv($file, []);
+                        fputcsv($file, [
+                            '',
+                            "Date Range: $dateRange",
+                            '',
+                            '',
+                            '',
+                            'Totals:',
+                            "{$driverTotal['orders']}",
+                            "{$driverTotal['bonus']}",
+                            "{$driverTotal['tips']}",
+                            "{$driverTotal['otherTips']}",
+                            ''
+                        ]);
+                        
+                        fputcsv($file, []);
+                    }
+                }
+
+                fputcsv($file, []);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

@@ -19,7 +19,10 @@
     <div class="d-flex gap-2">
         @if ($export)
             <button wire:click="exportPdf" class="btn btn-danger">
-                <i class="align-bottom ri-download-line me-1"></i> @translate('Export PDF')
+                <i class="align-bottom ri-file-pdf-line me-1"></i> @translate('Export PDF')
+            </button>
+            <button wire:click="exportCsv" class="btn btn-success">
+                <i class="align-bottom ri-file-excel-line me-1"></i> @translate('Export CSV')
             </button>
         @endif
           @if ($import)
