@@ -79,12 +79,12 @@
                         <tr>
                             <td></td>
                             <td colspan="{{ count($columns) }}" style="padding: 0;">
-                                <div style="margin: 10px;">
+                                <!-- <div style="margin: 10px;">
                                     <strong>Report Date Range:</strong> {{ $from ? \Carbon\Carbon::parse($from)->format('d-m-Y') : 'N/A' }} - {{ $to ? \Carbon\Carbon::parse($to)->format('d-m-Y') : 'N/A' }}<br>
                                     <strong>Driver:</strong> {{ data_get($first, 'driver.name') ?? 'N/A' }}<br>
                                     <strong>Branch:</strong> {{ data_get($first, 'branch.name') ?? 'N/A' }}<br>
                                     <strong>Status:</strong> {{ $group->pluck('status')->filter()->unique()->implode(', ') ?: 'N/A' }}
-                                </div>
+                                </div> -->
                                 
                                 <table style="width: 100%; border-collapse: collapse; margin-top: 5px;">
                                     <thead>
@@ -125,7 +125,8 @@
                                             </tr>
                                         @endforeach
                                         <tr style="background-color: #f8f9fa;">
-                                            <td colspan="6" style="border: 1px solid #dee2e6; padding: 8px; text-align: right;"><strong>Totals:</strong></td>
+                                            <td colspan="5" style="border: 1px solid #dee2e6; padding: 8px; text-align: right;"><strong>Date Range: </strong>{{ $from ? \Carbon\Carbon::parse($from)->format('d-m-Y') : 'N/A' }} - {{ $to ? \Carbon\Carbon::parse($to)->format('d-m-Y') : 'N/A' }}</td>
+                                            <td colspan="1" style="border: 1px solid #dee2e6; padding: 8px; text-align: right;"><strong>Totals:</strong></td>
                                             <td style="border: 1px solid #dee2e6; padding: 8px; text-align: right;"><strong>{{ $driverOrders }}</strong></td>
                                             <td style="border: 1px solid #dee2e6; padding: 8px; text-align: right;"><strong>{{ $driverBonus }}</strong></td>
                                             <td style="border: 1px solid #dee2e6; padding: 8px; text-align: right;"><strong>{{ $driverTips }}</strong></td>
@@ -139,7 +140,7 @@
                     @endforeach
                     
                     {{-- Grand totals box --}}
-                    <tr>
+                    <!-- <tr>
                         <td></td>
                         <td colspan="{{ count($columns) }}" style="padding: 15px 10px;">
                             <strong style="display: block; margin-bottom: 5px; text-align: center;">Grand Totals</strong>
@@ -158,7 +159,7 @@
                                 </tr>
                             </table>
                         </td>
-                    </tr>
+                    </tr> -->
                 @endif
             @endforeach
         </tbody>
