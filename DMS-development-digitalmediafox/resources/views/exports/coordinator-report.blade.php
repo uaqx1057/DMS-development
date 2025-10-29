@@ -24,14 +24,43 @@
             </tr>
         </thead>
         <tbody>
+            {{-- Initialize sums array for numeric totals --}}
+            @php
+                $sums = array_fill(0, count($columns), 0.0);
+            @endphp
+
             @foreach ($coordinatorReports as $report)
                 <tr>
                     <td>{{ $loop->iteration }}</td> {{-- Serial number --}}
-                    @foreach ($columns as $col)
-                        <td>{{ data_get($report, $col['column']) }}</td>
-                    @endforeach
+                    @foreach ($columns as $index => $col)
+                                @php
+                                    $val = data_get($report, $col['column']);
+                                    // Skip summing iqama/driver identifier column
+                                    if ($col['column'] !== 'driver_iqama' && is_numeric($val)) {
+                                        $sums[$index] += (float) $val;
+                                    }
+                                @endphp
+                                <td>{{ $val }}</td>
+                            @endforeach
                 </tr>
             @endforeach
+
+            {{-- Totals row --}}
+            <tr>
+                <td><strong>Total</strong></td>
+                @foreach ($columns as $index => $col)
+                    @php
+                        $sum = $sums[$index] ?? 0;
+                    @endphp
+                    <td>
+                        @if(is_numeric($sum) && $sum != 0)
+                            <strong>{{ number_format($sum, 2) }}</strong>
+                        @else
+                            {{-- leave blank for non-numeric or zero totals --}}
+                        @endif
+                    </td>
+                @endforeach
+            </tr>
         </tbody>
     </table>
 </body>

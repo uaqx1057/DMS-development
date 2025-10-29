@@ -8,7 +8,6 @@
                         <button type="button" class="btn-close m-1" wire:click="closeModal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        {{-- @dd($reportData) --}}
                         <table class="table table-bordered table-striped">
                             <thead class="bg-light">
                                 <tr>
@@ -23,11 +22,11 @@
                                 </tr>
                                 <tr>
                                     <td><strong>Driver ID</strong></td>
-                                    <td>{{ $reportData['driver']['name'] .' ('.$reportData['driver']['iqaama_number'].')' }}</td>
+                                    <td>{{ isset($reportData['driver']) ? ($reportData['driver']['name'] .' ('.$reportData['driver']['iqaama_number'].')') : 'N/A' }}</td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Total Orders</strong></td>
-                                    <td>{{ $totalOrders }}</td>
+                                    <td><strong>Branch</strong></td>
+                                    <td>{{ isset($reportData['driver']['branch']) ? $reportData['driver']['branch']['name'] : 'N/A' }}</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Current Status</strong></td>
@@ -46,47 +45,119 @@
                         </table>
 
                         <h3 class="mt-4">Wallet Details</h3>
-                         @if(!empty($reportData['wallet']))
-                        <div class="row mt-2">
-                            <div class="mb-3 col-md-3">
-                                <a href="{{ asset('storage/app/public/' . $reportData['wallet']) }}" target="_blank">
-                                    <img src="{{ asset('storage/app/public/' . $reportData['wallet']) }}" class="img-fluid img-thumbnail" alt="Document Image">
-                                </a>
+                        @if(!empty($reportData['wallet']))
+                            <div class="row mt-2">
+                                <div class="mb-3 col-md-3">
+                                    <a href="{{ asset('storage/app/public/' . $reportData['wallet']) }}" target="_blank">
+                                        <img src="{{ asset('storage/app/public/' . $reportData['wallet']) }}" class="img-fluid img-thumbnail" alt="Document Image">
+                                    </a>
+                                </div>
                             </div>
-                        </div>
                         @else
-                                        <p>No documents available.</p>
-                                    @endif
+                            <p>No documents available.</p>
+                        @endif
+
                         <h3 class="mt-4">Business Details</h3>
-                        @if(!empty($reportData['businesses']))
-                            @foreach($reportData['businesses'] as $business)
-                                <div class="mb-4">
-                                    <h6><strong>Business Name:</strong> {{ $business['name'] }}</h6>
+                        @php
+                            $fieldsCollection = collect($reportData['report_fields'] ?? []);
+                            $groupedByBusinessValue = $fieldsCollection->groupBy('business_id_value');
+                        @endphp
 
-                                    @php
-                                        $fieldData = collect($reportData['report_fields'])->firstWhere(function ($field) use ($business) {
-                                            return $field['business_id'] === $business['id'] && $field['field_id'] === 5;
-                                        });
-                                        $files = $fieldData ? json_decode($fieldData['value'], true) : [];
-                                    @endphp
-
-                                    @if(!empty($files))
-                                        <div class="row">
-                                            @foreach($files as $file)
-                                                <div class="mb-3 col-md-3">
-                                                    <a href="{{ asset('storage/app/public/' . $file) }}" target="_blank">
-                                                        <img src="{{ asset('storage/app/public/' . $file) }}" class="img-fluid img-thumbnail" alt="Document Image">
-                                                    </a>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    @else
-                                        <p>No documents available.</p>
-                                    @endif
+                        @if($groupedByBusinessValue->isNotEmpty())
+                            @foreach($groupedByBusinessValue as $businessIdValue => $fieldsGroup)
+                                @php $businessIdModel = \App\Models\BusinessId::find($businessIdValue); @endphp
+                                <div class="mb-4 card">
+                                    <div class="card-header">
+                                        {{-- Use BusinessId->value and Business type name --}}
+                                        <h5 class="mb-0">{{ optional($businessIdModel->business)->name ?? 'Business' }} ({{ $businessIdModel->value ?? $businessIdValue }})</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <table class="table table-bordered table-sm">
+                                            <tbody>
+                                                @foreach($fieldsGroup as $field)
+                                                    @if(isset($field['field']))
+                                                        <tr>
+                                                            <td><strong>{{ $field['field']['name'] }}</strong></td>
+                                                            <td>
+                                                                @if($field['field']['type'] === 'DOCUMENT')
+                                                                    @php $files = json_decode($field['value'], true) ?? []; @endphp
+                                                                    @if(!empty($files))
+                                                                        <div class="row">
+                                                                            @foreach($files as $file)
+                                                                                <div class="mb-2 col-md-3">
+                                                                                    <a href="{{ asset('storage/app/public/' . $file) }}" target="_blank">
+                                                                                        <img src="{{ asset('storage/app/public/' . $file) }}" class="img-fluid img-thumbnail" alt="Document Image">
+                                                                                    </a>
+                                                                                </div>
+                                                                            @endforeach
+                                                                        </div>
+                                                                    @else
+                                                                        <p class="mb-0">No documents available</p>
+                                                                    @endif
+                                                                @elseif($field['field']['type'] === 'number')
+                                                                    ₹{{ number_format($field['value'], 2) }}
+                                                                @else
+                                                                    {{ $field['value'] }}
+                                                                @endif
+                                                            </td>
+                                                        </tr>
+                                                    @endif
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             @endforeach
                         @else
-                            <p>No business details found.</p>
+                            {{-- Fallback if no grouped fields available: show businesses array if present --}}
+                            @if(!empty($reportData['businesses']))
+                                @foreach($reportData['businesses'] as $business)
+                                    <div class="mb-4 card">
+                                        <div class="card-header">
+                                            <h5 class="mb-0">{{ $business['name'] }} ({{ $business['value'] ?? $business['id'] }})</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <table class="table table-bordered table-sm">
+                                                <tbody>
+                                                    @foreach(collect($reportData['report_fields'])->filter(function($f) use ($business) {
+                                                        return (isset($f['business_id']) && $f['business_id'] == ($business['id'] ?? null)) || (isset($f['business_id_value']) && $f['business_id_value'] == ($business['id'] ?? null));
+                                                    }) as $field)
+                                                        @if(isset($field['field']))
+                                                            <tr>
+                                                                <td><strong>{{ $field['field']['name'] }}</strong></td>
+                                                                <td>
+                                                                    @if($field['field']['type'] === 'DOCUMENT')
+                                                                        @php $files = json_decode($field['value'], true) ?? []; @endphp
+                                                                        @if(!empty($files))
+                                                                            <div class="row">
+                                                                                @foreach($files as $file)
+                                                                                    <div class="mb-2 col-md-3">
+                                                                                        <a href="{{ asset('storage/app/public/' . $file) }}" target="_blank">
+                                                                                            <img src="{{ asset('storage/app/public/' . $file) }}" class="img-fluid img-thumbnail" alt="Document Image">
+                                                                                        </a>
+                                                                                    </div>
+                                                                                @endforeach
+                                                                            </div>
+                                                                        @else
+                                                                            <p class="mb-0">No documents available</p>
+                                                                        @endif
+                                                                    @elseif($field['field']['type'] === 'number')
+                                                                        ₹{{ number_format($field['value'], 2) }}
+                                                                    @else
+                                                                        {{ $field['value'] }}
+                                                                    @endif
+                                                                </td>
+                                                            </tr>
+                                                        @endif
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            @else
+                                <p>No business details found.</p>
+                            @endif
                         @endif
                     </div>
                     <div class="modal-footer">

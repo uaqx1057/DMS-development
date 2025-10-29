@@ -111,7 +111,18 @@
             <x-ui.card>
 
 
-                <x-ui.card-header title="Coordinator Report List" :href="route('coordinator-report.create')" :add="$add_permission" :import=true :export="$coordinatorReports->count() > 0"/>
+                <x-ui.card-header title="Coordinator Report List" :href="route('coordinator-report.create')" :add="$add_permission" :import=true :export="$coordinatorReports->count() > 0">
+                    @if($coordinatorReports->count() > 0)
+                        <div class="d-flex gap-2">
+                            <button wire:click="exportCsv" class="btn btn-secondary btn-sm">
+                                <i class="ri-file-excel-2-line align-bottom me-1"></i> Export CSV
+                            </button>
+                            <button wire:click="exportPdf" class="btn btn-danger btn-sm">
+                                <i class="ri-file-pdf-line align-bottom me-1"></i> Export PDF
+                            </button>
+                        </div>
+                    @endif
+                </x-ui.card-header>
                 <x-ui.card-body>
                     <x-table
                     :columns="$columns"

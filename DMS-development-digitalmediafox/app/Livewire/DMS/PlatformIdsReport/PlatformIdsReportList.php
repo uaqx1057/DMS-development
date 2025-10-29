@@ -119,10 +119,16 @@ class PlatformIdsReportList extends Component
         $main_menu = $this->main_menu;
         $menu = $this->menu;
         $coordinatorReports = $this->platformIdReportService->all($this->perPage, $this->page, $filters);
-        $fields = $this->fieldService->all()->where('is_default', 1)->where('name', '!=', 'Upload Driver Documents')->pluck('name')->toArray();
+        // Get all businesses and their fields
+        $businesses = $this->businessService->all();
+        $fields = collect();
+        foreach ($businesses as $business) {
+            $fields = $fields->merge($business->fields->pluck('name'));
+        }
+        $fields = $fields->unique()->values()->toArray();
         $add_permission = CheckPermission(config('const.ADD'), config('const.COORDINATORREPORT'));
         $edit_permission = CheckPermission(config('const.EDIT'), config('const.COORDINATORREPORT'));
-        
+
         if (!empty($this->business_id)) {
             $businessIds = BusinessId::where('business_id', $this->business_id)
                 ->where('is_active', 1)
@@ -135,20 +141,29 @@ class PlatformIdsReportList extends Component
             ? Branch::where('id', $this->branch_id)->get()
             : $this->branchService->all();
 
-        $businesses = $this->businessService->all();
-        
+        // Build columns dynamically
         $columns = [
             ['label' => 'Date Range', 'column' => 'date_range', 'isData' => true, 'hasRelation' => false, 'format' => 'date'],
             ['label' => 'Platform', 'column' => 'business_name', 'isData' => true, 'hasRelation'=> false],
             ['label' => 'Drivers', 'column' => 'assigned_drivers', 'isData' => true, 'hasRelation'=> false, 'cssClass' => 'whitespace-pre-line'],
             ['label' => 'Branches', 'column' => 'branches', 'isData' => true, 'hasRelation'=> false, 'isHtml' => true],
-            ['label' => 'Total Orders', 'column' => 'Total Orders', 'isData' => true,'hasRelation'=> false],
-            ['label' => 'Total Bonus', 'column' => 'Bonus', 'isData' => true,'hasRelation'=> false],
-            ['label' => 'Total Tips', 'column' => 'Tip', 'isData' => true,'hasRelation'=> false],
-            ['label' => 'Total Other Tips', 'column' => 'Other Tip', 'isData' => true,'hasRelation'=> false],
-            ['label' => 'Status', 'column' => 'report_status', 'isData' => true,'hasRelation'=> false, 'isHtml' => true],
-            ['label' => 'View Report', 'column' => 'view', 'isData' => false, 'hasRelation' => false],
         ];
+        // Add all dynamic business fields except 'Upload Driver Documents'
+        foreach ($fields as $fieldName) {
+            if ($fieldName !== 'Upload Driver Documents') {
+                $columns[] = [
+                    'label' => $fieldName,
+                    'column' => $fieldName,
+                    'isData' => true,
+                    'hasRelation' => false
+                ];
+            }
+        }
+        // Add status and view columns
+        $columns = array_merge($columns, [
+            ['label' => 'Status', 'column' => 'report_status', 'isData' => true, 'hasRelation'=> false, 'isHtml' => true],
+            ['label' => 'View Report', 'column' => 'view', 'isData' => false, 'hasRelation' => false],
+        ]);
 
         $pendingReportsCount = $coordinatorReports->filter(fn($report) => $report->report_status === 'Pending')->count();
         $completedReportsCount = $coordinatorReports->filter(fn($report) => $report->report_status === 'Approved')->count();
@@ -241,11 +256,11 @@ class PlatformIdsReportList extends Component
             
             // Write summary header
             fputcsv($file, [
-                'Sr. No.',
-                'Date Range',
-                'Platform',
-                'Drivers',
-                'Branches',
+            'Sr. No.',
+            'Date Range',
+            'Platform',
+            'Drivers',
+            'Branches',
                 'Total Orders',
                 'Total Bonus',
                 'Total Tips',
@@ -254,13 +269,13 @@ class PlatformIdsReportList extends Component
             ]);
 
             // Write summary rows
-            foreach ($coordinatorReports as $index => $report) {
+        foreach ($coordinatorReports as $index => $report) {
                 fputcsv($file, [
-                    $index + 1,
-                    $this->customFormat(['column' => 'date_range', 'format' => 'date'], $report->date_range),
-                    $report->business_name,
-                    strip_tags($report->assigned_drivers),
-                    strip_tags($report->branches),
+                $index + 1,
+                $this->customFormat(['column' => 'date_range', 'format' => 'date'], $report->date_range),
+                $report->business_name,
+                strip_tags($report->assigned_drivers),
+                strip_tags($report->branches),
                     $report->{'Total Orders'},
                     $report->{'Bonus'},
                     $report->{'Tip'},
