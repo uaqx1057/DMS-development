@@ -5,7 +5,7 @@
                 <div class="modal-content">
                     <div class="text-white modal-header bg-primary">
                         <h5 class="modal-title">Coordinator Report Details</h5>
-                        <button type="button" class="btn-close" wire:click="closeModal" aria-label="Close"></button>
+                        <button type="button" class="btn-close m-1" wire:click="closeModal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         {{-- @dd($reportData) --}}

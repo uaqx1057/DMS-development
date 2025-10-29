@@ -84,45 +84,46 @@ class PlatformIdsReportModal extends Component
         $callback = function() use ($report) {
             $file = fopen('php://output', 'w');
 
-            // Write report header
-            fputcsv($file, ['Platform Report Details']);
-            fputcsv($file, []);
+            // Prepare all headers and values
+            $allHeaders = [
+                'Platform Name',
+                'Platform ID', 
+                'Report Date',
+                'Driver Name',
+                'Driver Iqaama',
+                'Branch'
+            ];
             
-            // Basic Information
-            fputcsv($file, ['Basic Information']);
-            fputcsv($file, ['Platform Name', $this->businessName]);
-            fputcsv($file, ['Platform ID', $this->platformId]);
-            fputcsv($file, ['Report Date', \Carbon\Carbon::parse($report['report_date'])->format('d-m-Y')]);
-            fputcsv($file, ['Driver Name', $report['driver']['name']]);
-            fputcsv($file, ['Driver Iqaama', $report['driver']['iqaama_number']]);
-            fputcsv($file, ['Branch', $report['branch']['name']]);
-            fputcsv($file, ['Status', $report['status']]);
-            fputcsv($file, []);
+            $allValues = [
+                $this->businessName,
+                $this->platformId,
+                \Carbon\Carbon::parse($report['report_date'])->format('d-m-Y'),
+                $report['driver']['name'],
+                $report['driver']['iqaama_number'],
+                $report['branch']['name']
+            ];
 
-            // Field Values
-            fputcsv($file, ['Report Values']);
-            fputcsv($file, ['Field', 'Value']);
-            
+            // Add regular field values
             foreach ($report['field_values'] as $fieldName => $fieldData) {
                 if ($fieldData['type'] !== 'DOCUMENT') {
-                    fputcsv($file, [$fieldName, $fieldData['value']]);
+                    $allHeaders[] = $fieldName;
+                    $allValues[] = $fieldData['value'];
                 }
             }
 
-            // Document Section
+            // Add document fields
             $documentFields = array_filter($report['field_values'], fn($field) => $field['type'] === 'DOCUMENT');
-            if (!empty($documentFields)) {
-                fputcsv($file, []);
-                fputcsv($file, ['Document Attachments']);
-                fputcsv($file, ['Document Type', 'File Path']);
-                
-                foreach ($documentFields as $fieldName => $fieldData) {
-                    $files = json_decode($fieldData['value'], true) ?? [];
-                    foreach ($files as $file_path) {
-                        fputcsv($file, [$fieldName, asset('storage/' . $file_path)]);
-                    }
-                }
+            foreach ($documentFields as $fieldName => $fieldData) {
+                $allHeaders[] = $fieldName . ' (Document)';
+                $files = json_decode($fieldData['value'], true) ?? [];
+                $allValues[] = !empty($files) ? 
+                    implode('; ', array_map(fn($file) => asset('storage/' . $file), $files)) : 
+                    'No files';
             }
+
+            // Write headers and values
+            fputcsv($file, $allHeaders);
+            fputcsv($file, $allValues);
 
             fclose($file);
         };

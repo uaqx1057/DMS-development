@@ -23,7 +23,6 @@ class Login extends Component
             'iqaama_number' => $this->iqaama_number,
             'password' => $this->password,
         ])) {
-            dd();
             return redirect()->intended('/driver/dashboard');
         }
 

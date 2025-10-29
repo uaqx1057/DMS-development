@@ -8,7 +8,7 @@
                             Platform Reports: {{ $businessName }} ({{ $platformId }})
                             <span class="badge bg-light text-dark ms-2">{{ count($reports) }} Report(s)</span>
                         </h5>
-                        <button type="button" class="btn-close btn-close-white" wire:click="closeModal" aria-label="Close"></button>
+                        <button type="button" class="btn-close btn-close-white m-1" wire:click="closeModal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
                         @if(!empty($reports))
