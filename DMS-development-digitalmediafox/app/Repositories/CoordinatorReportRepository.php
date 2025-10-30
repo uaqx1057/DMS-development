@@ -120,29 +120,20 @@ class CoordinatorReportRepository implements CoordinatorReportInterface
 
 
 
-private function paginateCollection(Collection $items, $perPage, $currentPage)
-{
-        // If perPage is 0, return all items without pagination
-        if ($perPage <= 0) {
-            return $items;
-        }
-            // If perPage is very large or there are no items, return the full collection
-            if ($perPage > 1000 || $items->isEmpty()) {
-                return $items;
-            }
+    private function paginateCollection(Collection $items, $perPage, $currentPage)
+    {
+        $total = $items->count();
+        $offset = ($currentPage - 1) * $perPage;
+        $currentItems = $items->slice($offset, $perPage);
 
-    $total = $items->count();
-    $offset = ($currentPage - 1) * $perPage;
-    $currentItems = $items->slice($offset, $perPage);
-
-    return new LengthAwarePaginator(
-        $currentItems->values(),
-        $total,
-        $perPage,
-        $currentPage,
-        ['path' => LengthAwarePaginator::resolveCurrentPath()]
-    );
-}
+        return new LengthAwarePaginator(
+            $currentItems->values(),
+            $total,
+            $perPage,
+            $currentPage,
+            ['path' => LengthAwarePaginator::resolveCurrentPath()]
+        );
+    }
   
      public function create($data){
         // Create Coordinator Report
