@@ -24,6 +24,14 @@ class CreateCoordinatorReport extends Component
         $validated['formData'] = $this->formData;
         $validated['files'] = $this->files;
         
+        // Automatically set branch_id from the selected driver
+        if (!empty($validated['driver_id'])) {
+            $driver = \App\Models\Driver::find($validated['driver_id']);
+            if ($driver && $driver->branch_id) {
+                $validated['branch_id'] = $driver->branch_id;
+            }
+        }
+        
         $checkCoordinatorReport = $this->coordinatorReportService->checkDuplicateReport([
             'report_date' => $validated['report_date'],
             'driver_id' => $validated['driver_id']

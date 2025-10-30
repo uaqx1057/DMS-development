@@ -15,7 +15,8 @@ class PlatformIdReportRepository implements CoordinatorReportInterface
     {
         $query = CoordinatorReport::with([
             'report_fields.field',
-            'driver.branch',
+            'driver',
+            'branch',
             'businesses',
         ]);
 
@@ -34,11 +35,9 @@ class PlatformIdReportRepository implements CoordinatorReportInterface
         }
         // Remove the default date filter so all records show when no date is selected
 
-        // 🔹 Filter by branch_id via driver relation
+        // 🔹 Filter by branch_id directly from coordinator_reports table
         if (!empty($filters['branch_id'])) {
-            $query->whereHas('driver.branch', function ($q) use ($filters) {
-                $q->where('id', $filters['branch_id']);
-            });
+            $query->where('branch_id', $filters['branch_id']);
         }
 
         // ✅ Run query first to get base reports
@@ -109,10 +108,10 @@ class PlatformIdReportRepository implements CoordinatorReportInterface
                     }
 
                     // Collect unique branches
-                    if ($report->driver && $report->driver->branch) {
-                        $branchKey = $report->driver->branch->id;
+                    if ($report->branch) {
+                        $branchKey = $report->branch->id;
                         if (!isset($groupedData[$businessKey]['branches'][$branchKey])) {
-                            $groupedData[$businessKey]['branches'][$branchKey] = $report->driver->branch->name;
+                            $groupedData[$businessKey]['branches'][$branchKey] = $report->branch->name;
                         }
                     }
 
@@ -204,7 +203,7 @@ class PlatformIdReportRepository implements CoordinatorReportInterface
             $total,
             $perPage,
             $currentPage,
-            ['path' => LengthAwarePaginator::resolveCurrentPath()]
+            ['path' => url()->current(), 'pageName' => 'page']
         );
     }
 
@@ -354,7 +353,8 @@ class PlatformIdReportRepository implements CoordinatorReportInterface
         // Get all coordinator reports that have fields with this business_id_value
         $reports = CoordinatorReport::with([
             'report_fields.field',
-            'driver.branch',
+            'driver',
+            'branch',
             'businesses',
         ])
         ->whereHas('report_fields', function ($query) use ($businessIdValue) {
@@ -389,8 +389,8 @@ class PlatformIdReportRepository implements CoordinatorReportInterface
                     'iqaama_number' => $report->driver->iqaama_number ?? 'N/A',
                 ],
                 'branch' => [
-                    'id' => $report->driver->branch->id ?? null,
-                    'name' => $report->driver->branch->name ?? 'N/A',
+                    'id' => $report->branch->id ?? null,
+                    'name' => $report->branch->name ?? 'N/A',
                 ],
                 'business_id_value' => $businessIdValue,
                 'business_name' => $businessId->business->name ?? 'Unknown',

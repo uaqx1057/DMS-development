@@ -33,6 +33,10 @@ class CoordinatorReport extends Model
     {
         return $this->belongsTo(Driver::class);
     }
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
 
     /**
      * The business that belong to the CoordinatorReport

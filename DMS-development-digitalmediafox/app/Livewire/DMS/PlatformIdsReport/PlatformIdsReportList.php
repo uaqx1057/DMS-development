@@ -118,7 +118,7 @@ class PlatformIdsReportList extends Component
         
         $main_menu = $this->main_menu;
         $menu = $this->menu;
-        $coordinatorReports = $this->platformIdReportService->all($this->perPage, $this->page, $filters);
+        $coordinatorReports = $this->platformIdReportService->all($this->perPage, null, $filters);
         // Get all businesses and their fields
         $businesses = $this->businessService->all();
         $fields = collect();

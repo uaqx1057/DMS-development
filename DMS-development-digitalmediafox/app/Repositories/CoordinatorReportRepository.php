@@ -15,7 +15,8 @@ class CoordinatorReportRepository implements CoordinatorReportInterface
     {
         $query = CoordinatorReport::with([
             'report_fields.field',
-            'driver.branch',
+            'driver',
+            'branch',
             'businesses',
         ]);
 
@@ -35,17 +36,18 @@ class CoordinatorReportRepository implements CoordinatorReportInterface
             $query->whereDate('report_date', now()->format('Y-m-d'));
         }
 
-        // 🔹 Filter by branch_id via driver relation
+        // 🔹 Filter by branch_id directly from coordinator_reports table
         if (!empty($filters['branch_id'])) {
-            $query->whereHas('driver.branch', function ($q) use ($filters) {
-                $q->where('id', $filters['branch_id']);
-            });
+            $query->where('branch_id', $filters['branch_id']);
         }
 
         // ✅ Run query first to get base reports
         $coordinatorReports = $query->get();
 
         // Collect all field names for dynamic columns
+        // Get Field ID for Total Orders
+        $totalOrdersField = Field::where('name', 'Total Orders')->first();
+        
         $fields = $coordinatorReports
             ->pluck('report_fields.*.field.name')
             ->flatten()
@@ -79,7 +81,7 @@ class CoordinatorReportRepository implements CoordinatorReportInterface
                     $reportModel->setAttribute('id', $report->id);
                     $reportModel->setAttribute('driver_iqama', optional($report->driver)->iqaama_number ?? 'N/A');
                     $reportModel->setAttribute('driver_name', optional($report->driver)->name ?? 'N/A');
-                    $reportModel->setAttribute('branch_name', optional($report->driver->branch)->name ?? 'N/A');
+                    $reportModel->setAttribute('branch_name', optional($report->branch)->name ?? 'N/A');
                     $reportModel->setAttribute('report_status', $report->status ?? 'Unknown');
 
                     $businessTypeName = $businessId->business->name ?? 'Unknown Business';
@@ -104,7 +106,7 @@ class CoordinatorReportRepository implements CoordinatorReportInterface
                 $reportModel->setAttribute('id', $report->id);
                 $reportModel->setAttribute('driver_iqama', optional($report->driver)->iqaama_number ?? 'N/A');
                 $reportModel->setAttribute('driver_name', optional($report->driver)->name ?? 'N/A');
-                $reportModel->setAttribute('branch_name', optional($report->driver->branch)->name ?? 'N/A');
+                $reportModel->setAttribute('branch_name', optional($report->branch)->name ?? 'N/A');
                 $reportModel->setAttribute('report_status', $report->status ?? 'Unknown');
                 $reportModel->setAttribute('business_name', 'N/A');
                 foreach ($fields as $field) {
@@ -131,12 +133,19 @@ class CoordinatorReportRepository implements CoordinatorReportInterface
             $total,
             $perPage,
             $currentPage,
-            ['path' => LengthAwarePaginator::resolveCurrentPath()]
+            ['path' => url()->current(), 'pageName' => 'page']
         );
     }
+
   
      public function create($data){
         // Create Coordinator Report
+        if (!isset($data['branch_id']) && isset($data['driver_id'])) {
+            $driver = \App\Models\Driver::find($data['driver_id']);
+            if ($driver && $driver->branch_id) {
+                $data['branch_id'] = $driver->branch_id;
+            }
+        }
         $report = CoordinatorReport::create($data);
         
         // Store business type IDs (for the businesses relationship)
@@ -243,7 +252,12 @@ class CoordinatorReportRepository implements CoordinatorReportInterface
     {
         // Find the report
         $report = CoordinatorReport::find($data['id']);
-
+        if (!isset($data['branch_id']) && isset($data['driver_id'])) {
+            $driver = \App\Models\Driver::find($data['driver_id']);
+            if ($driver && $driver->branch_id) {
+                $data['branch_id'] = $driver->branch_id;
+            }
+        }
         // Store business type IDs (for the businesses relationship)
         if (!empty($data['selectedBusinessIds'])) {
             $businessTypeIds = BusinessId::whereIn('id', $data['selectedBusinessIds'])
@@ -310,6 +324,7 @@ class CoordinatorReportRepository implements CoordinatorReportInterface
         // Update report data
         $report->update([
             'driver_id' => $data['driver_id'],
+            'branch_id' => $data['branch_id'] ?? $report->branch_id,
             'report_date' => $data['report_date'],
             'status' => $data['status']
         ]);

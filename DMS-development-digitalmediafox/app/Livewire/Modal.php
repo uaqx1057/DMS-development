@@ -18,7 +18,8 @@ class Modal extends Component
     {
         // Load the report with all necessary relationships
         $report = CoordinatorReport::with([
-            'driver.branch',
+            'driver',
+            'branch',
             'businesses',
             'report_fields.field', // Make sure we load the field relationship
         ])->find($reportId);

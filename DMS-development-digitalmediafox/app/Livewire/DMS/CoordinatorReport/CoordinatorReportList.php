@@ -17,11 +17,13 @@ use App\Models\Branch;
 use App\Models\CoordinatorReport;
 use App\Models\BusinessCoordinatorReport;
 use App\Models\CoordinatorReportFieldValue;
+use Livewire\WithPagination;
+
 use App\Models\Field; // if you have dynamic field IDs
 
 class CoordinatorReportList extends Component
 {
-    use DataTableTrait;
+    use DataTableTrait,WithPagination;
     protected CoordinatorReportService $coordinatorReportService;
     protected BusinessService $businessService;
     protected DriverService $driverService;
@@ -95,9 +97,8 @@ class CoordinatorReportList extends Component
     public function render()
     {
         if(auth()->user()->role_id!=1){
-            $this->branch_id=auth()->user()->branch_id;
+            $this->branch_id = auth()->user()->branch_id;
         }
-        
         
         $main_menu = $this->main_menu;
         $menu = $this->menu;
@@ -112,8 +113,8 @@ class CoordinatorReportList extends Component
             'branch_id' => $this->branch_id,
         ];
         
-        $coordinatorReports = $this->coordinatorReportService->all($this->perPage, $this->page, $filters);
-        
+        $coordinatorReports = $this->coordinatorReportService->all($this->perPage, null, $filters);
+
         // Get fields that are assigned to any business
         $fields = collect();
         foreach ($businesses as $business) {
@@ -176,7 +177,12 @@ class CoordinatorReportList extends Component
 
         $pendingReportsCount = $coordinatorReports->filter(fn($report) => $report->report_status === 'Pending')->count();
         $completedReportsCount = $coordinatorReports->filter(fn($report) => $report->report_status === 'Approved')->count();
-        $totalOrdersCount = $coordinatorReports->sum('total_orders'); // Assumes total_orders is in the data
+        
+        // Calculate total orders by summing the "Total Orders" field value from all reports
+        $totalOrdersCount = $coordinatorReports->sum(function($report) {
+            // Get the Total Orders field value from the expanded attributes
+            return floatval($report->{'Total Orders'} ?? 0);
+        });
 
         return view('livewire.dms.coordinator-report.coordinator-report-list', compact('main_menu', 'menu', 'coordinatorReports', 'fields', 'add_permission', 'edit_permission', 'columns', 'drivers', 'pendingReportsCount', 'completedReportsCount', 'totalOrdersCount', 'businesses', 'branches'));
     }

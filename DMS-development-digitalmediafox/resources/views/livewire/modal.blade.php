@@ -26,7 +26,7 @@
                                 </tr>
                                 <tr>
                                     <td><strong>Branch</strong></td>
-                                    <td>{{ isset($reportData['driver']['branch']) ? $reportData['driver']['branch']['name'] : 'N/A' }}</td>
+                                    <td>{{ isset($reportData['branch']) ? $reportData['branch']['name'] : 'N/A' }}</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Current Status</strong></td>

@@ -23,6 +23,14 @@ class EditCoordinatorReport extends Component
         $validated['id'] = $this->coordinatorReportId;
         $validated['status'] = $this->status;
         
+        // Automatically set branch_id from the selected driver
+        if (!empty($validated['driver_id'])) {
+            $driver = \App\Models\Driver::find($validated['driver_id']);
+            if ($driver && $driver->branch_id) {
+                $validated['branch_id'] = $driver->branch_id;
+            }
+        }
+        
         $checkCoordinatorReport = $this->coordinatorReportService->checkDuplicateReportUpdate([
             'report_date' => $validated['report_date'],
             'driver_id' => $validated['driver_id'],

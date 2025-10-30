@@ -17,7 +17,7 @@ class CoordinatorReportModal extends Component
     public function show($reportData)
     {
         $this->reportData = $reportData;
-        // dd($reportData);
+        // Get branch information directly from the report
         $this->status = $reportData['status'] ?? 'Pending';
 
         $this->showModal = true;
