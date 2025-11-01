@@ -116,7 +116,9 @@ class CoordinatorReportRepository implements CoordinatorReportInterface
                 $expandedResults->push($reportModel);
             }
         }
-
+        if (is_null($perPage)) {
+            return $expandedResults;
+        }
         $currentPage = $currentPage ?: LengthAwarePaginator::resolveCurrentPage();
         return $this->paginateCollection($expandedResults, $perPage, $currentPage, $filters);
     }

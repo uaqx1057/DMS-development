@@ -187,7 +187,7 @@ class PlatformIdsReportList extends Component
             'business_id' => $this->business_id,
         ];
 
-        $coordinatorReports = $this->platformIdReportService->all($this->perPage, $this->page, $filters);
+        $coordinatorReports = $this->platformIdReportService->all(null, null, $filters);
 
         $fields = $this->fieldService->all()
             ->where('is_default', 1)
@@ -239,7 +239,18 @@ class PlatformIdsReportList extends Component
             'business_id' => $this->business_id,
         ];
 
-        $coordinatorReports = $this->platformIdReportService->all($this->perPage, $this->page, $filters);
+        // Get all reports
+        $coordinatorReports = $this->platformIdReportService->all(null,null, $filters);
+
+        // ✅ Fetch all dynamic field names (same as in render)
+        $businesses = $this->businessService->all();
+        $fields = collect();
+        foreach ($businesses as $business) {
+            $fields = $fields->merge($business->fields->pluck('name'));
+        }
+        $fields = $fields->unique()->values()->toArray();
+
+        // Get detailed reports per business_id_value
         $details = [];
         foreach ($coordinatorReports as $report) {
             $biv = data_get($report, 'business_id_value');
@@ -253,57 +264,76 @@ class PlatformIdsReportList extends Component
             'Content-Disposition' => 'attachment; filename=platform-ids-report-list-' . now()->format('Y-m-d') . '.csv',
         ];
 
-        $callback = function() use ($coordinatorReports, $details) {
+        $callback = function() use ($coordinatorReports, $details, $fields) {
             $file = fopen('php://output', 'w');
-            
-            // Write summary header
-            fputcsv($file, [
-            'Sr. No.',
-            'Date Range',
-            'Platform',
-            'Drivers',
-            'Branches',
-                'Total Orders',
-                'Total Bonus',
-                'Total Tips',
-                'Total Other Tips',
-                'Status'
-            ]);
 
-            // Write summary rows
-        foreach ($coordinatorReports as $index => $report) {
-                fputcsv($file, [
-                $index + 1,
-                $this->customFormat(['column' => 'date_range', 'format' => 'date'], $report->date_range),
-                $report->business_name,
-                strip_tags($report->assigned_drivers),
-                strip_tags($report->branches),
-                    $report->{'Total Orders'},
-                    $report->{'Bonus'},
-                    $report->{'Tip'},
-                    $report->{'Other Tip'},
-                    strip_tags($report->report_status)
-                ]);
+            // 🔹 Build summary header dynamically
+            $summaryHeader = [
+                'Sr. No.',
+                'Date Range',
+                'Platform',
+                'Drivers',
+                'Branches',
+            ];
 
-                // Add a blank line before details
+            // Add dynamic field columns
+            foreach ($fields as $fieldName) {
+                if ($fieldName !== 'Upload Driver Documents') {
+                    $summaryHeader[] = $fieldName;
+                }
+            }
+
+            // Add Status column at end
+            $summaryHeader[] = 'Status';
+
+            fputcsv($file, $summaryHeader);
+
+            // 🔹 Write summary rows
+            foreach ($coordinatorReports as $index => $report) {
+                $row = [
+                    $index + 1,
+                    $this->customFormat(['column' => 'date_range', 'format' => 'date'], $report->date_range),
+                    $report->business_name,
+                    strip_tags($report->assigned_drivers),
+                    strip_tags($report->branches),
+                ];
+
+                // Add dynamic field values
+                foreach ($fields as $fieldName) {
+                    if ($fieldName !== 'Upload Driver Documents') {
+                        $row[] = $report->{$fieldName} ?? 0;
+                    }
+                }
+
+                // Add Status
+                $row[] = strip_tags($report->report_status);
+
+                fputcsv($file, $row);
+
+                // Blank line before details
                 fputcsv($file, []);
 
-                // Write details header
-                fputcsv($file, [
+                // 🔹 Detail header (per driver)
+                $detailHeader = [
                     'No.',
                     'Date',
                     'Iqama Number',
                     'Driver Name',
                     'Business Name',
                     'Branch Name',
-                    'Total Orders',
-                    'Bonus',
-                    'Tip',
-                    'Other Tip',
-                    'Status'
-                ]);
+                ];
 
-                // Get and process details for this report
+                // Add dynamic field columns to detail section too
+                foreach ($fields as $fieldName) {
+                    if ($fieldName !== 'Upload Driver Documents') {
+                        $detailHeader[] = $fieldName;
+                    }
+                }
+
+                $detailHeader[] = 'Status';
+                fputcsv($file, $detailHeader);
+
+                // Get driver-level detail data
                 $biv = data_get($report, 'business_id_value');
                 $driverReports = data_get($details, $biv) ?: [];
 
@@ -313,67 +343,61 @@ class PlatformIdsReportList extends Component
                     });
 
                     foreach ($groups as $driverId => $group) {
-                        $driverTotal = [
-                            'orders' => 0,
-                            'bonus' => 0,
-                            'tips' => 0,
-                            'otherTips' => 0
-                        ];
+                        $driverTotals = array_fill_keys($fields, 0);
 
-                        foreach ($group as $index => $dr) {
-                            // Write detail row
-                            $orders = data_get($dr, 'field_values.Total Orders.value', 0);
-                            $bonus = data_get($dr, 'field_values.Bonus.value', 0);
-                            $tips = data_get($dr, 'field_values.Tip.value', 0);
-                            $otherTips = data_get($dr, 'field_values.Other Tip.value', 0);
-
-                            fputcsv($file, [
-                                $index + 1,
+                        foreach ($group as $i => $dr) {
+                            $detailRow = [
+                                $i + 1,
                                 data_get($dr, 'report_date') ? \Carbon\Carbon::parse($dr['report_date'])->format('d-m-Y') : 'N/A',
                                 data_get($dr, 'driver.iqaama_number', 'N/A'),
                                 data_get($dr, 'driver.name', 'N/A'),
                                 data_get($dr, 'business_name', 'N/A'),
                                 data_get($dr, 'branch.name', 'N/A'),
-                                $orders,
-                                $bonus,
-                                $tips,
-                                $otherTips,
-                                $dr['status'] ?? 'N/A'
-                            ]);
+                            ];
 
-                            $driverTotal['orders'] += $orders;
-                            $driverTotal['bonus'] += $bonus;
-                            $driverTotal['tips'] += $tips;
-                            $driverTotal['otherTips'] += $otherTips;
+                            foreach ($fields as $fieldName) {
+                                if ($fieldName !== 'Upload Driver Documents') {
+                                    $val = data_get($dr, "field_values.$fieldName.value", 0);
+                                    $num = is_numeric($val) ? (float) $val : 0;
+                                    $detailRow[] = $num;
+                                    $driverTotals[$fieldName] += $num;
+                                }
+                            }
+
+                            $detailRow[] = data_get($dr, 'status', 'N/A');
+                            fputcsv($file, $detailRow);
                         }
 
-                        // Write driver total
+                        // Totals row
                         $dates = collect($group)->pluck('report_date')->filter()->sort()->values();
                         $from = $dates->first();
                         $to = $dates->last();
-                        $dateRange = ($from ? \Carbon\Carbon::parse($from)->format('d-m-Y') : 'N/A') . ' - ' . 
-                                   ($to ? \Carbon\Carbon::parse($to)->format('d-m-Y') : 'N/A');
+                        $dateRange = ($from ? \Carbon\Carbon::parse($from)->format('d-m-Y') : 'N/A') . ' - ' .
+                                    ($to ? \Carbon\Carbon::parse($to)->format('d-m-Y') : 'N/A');
 
-                        fputcsv($file, []);
-                        fputcsv($file, [
+                        $totalRow = [
                             '',
                             "Date Range: $dateRange",
                             '',
                             '',
                             '',
                             'Totals:',
-                            "{$driverTotal['orders']}",
-                            "{$driverTotal['bonus']}",
-                            "{$driverTotal['tips']}",
-                            "{$driverTotal['otherTips']}",
-                            ''
-                        ]);
-                        
+                        ];
+
+                        foreach ($fields as $fieldName) {
+                            if ($fieldName !== 'Upload Driver Documents') {
+                                $totalRow[] = $driverTotals[$fieldName] ?? 0;
+                            }
+                        }
+
+                        $totalRow[] = '';
+                        fputcsv($file, []);
+                        fputcsv($file, $totalRow);
                         fputcsv($file, []);
                     }
                 }
 
-                fputcsv($file, []);
+                fputcsv($file, []); // spacing between main reports
             }
 
             fclose($file);
@@ -381,4 +405,5 @@ class PlatformIdsReportList extends Component
 
         return response()->stream($callback, 200, $headers);
     }
+
 }

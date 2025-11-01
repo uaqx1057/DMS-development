@@ -202,7 +202,7 @@ public function exportCsv()
     ];
 
     // Get reports with a large page size to effectively get all records
-    $coordinatorReports = $this->coordinatorReportService->all(999999, 1, $filters);
+    $coordinatorReports = $this->coordinatorReportService->all(null, null, $filters);
 
     // Get businesses and their fields
     $businesses = $this->businessService->all();
@@ -305,7 +305,7 @@ public function exportPdf()
     ];
 
     // Get all filtered reports without pagination (handle perPage = 0 safely)
-    $coordinatorReports = $this->coordinatorReportService->all($this->perPage, $this->page, $filters);
+    $coordinatorReports = $this->coordinatorReportService->all(null, null, $filters);
 
     $fields = $this->fieldService->all()
         ->where('is_default', 1)
