@@ -40,6 +40,7 @@ class CoordinatorReportList extends Component
 
 
     public $driver_id, $business_id, $branch_id, $date_range;
+    protected $queryString = ['driver_id', 'business_id', 'branch_id', 'date_range', 'page'];
 
     public function mount(CoordinatorReportService $coordinatorReportService, BusinessService $businessService, FieldService $fieldService, DriverService $driverService, BranchService $branchService)
     {
@@ -113,7 +114,7 @@ class CoordinatorReportList extends Component
             'branch_id' => $this->branch_id,
         ];
         
-        $coordinatorReports = $this->coordinatorReportService->all($this->perPage, null, $filters);
+        $coordinatorReports = $this->coordinatorReportService->all($this->perPage,  $this->page, $filters);
 
         // Get fields that are assigned to any business
         $fields = collect();

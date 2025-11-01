@@ -8,6 +8,7 @@ use App\Models\Field;
 use App\Models\BusinessId;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 
 class CoordinatorReportRepository implements CoordinatorReportInterface
 {
@@ -117,24 +118,32 @@ class CoordinatorReportRepository implements CoordinatorReportInterface
         }
 
         $currentPage = $currentPage ?: LengthAwarePaginator::resolveCurrentPage();
-        return $this->paginateCollection($expandedResults, $perPage, $currentPage);
+        return $this->paginateCollection($expandedResults, $perPage, $currentPage, $filters);
     }
 
 
 
-    private function paginateCollection(Collection $items, $perPage, $currentPage)
+    private function paginateCollection(Collection $items, $perPage, $currentPage, $filters = [], $path = null)
     {
-        $total = $items->count();
-        $offset = ($currentPage - 1) * $perPage;
-        $currentItems = $items->slice($offset, $perPage);
+        $path = $path ?? url('/dms/coordinator-report');
 
-        return new LengthAwarePaginator(
-            $currentItems->values(),
-            $total,
+        $paginator = new LengthAwarePaginator(
+            $items->slice(($currentPage - 1) * $perPage, $perPage)->values(),
+            $items->count(),
             $perPage,
             $currentPage,
-            ['path' => url()->current(), 'pageName' => 'page']
+            [
+                'path' => $path,
+                'pageName' => 'page',
+            ]
         );
+
+        // ✅ Append Livewire filters manually
+        if (!empty($filters)) {
+            $paginator->appends($filters);
+        }
+
+        return $paginator;
     }
 
   

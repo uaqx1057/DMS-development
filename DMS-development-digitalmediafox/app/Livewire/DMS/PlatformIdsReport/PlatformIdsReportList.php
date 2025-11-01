@@ -37,6 +37,8 @@ class PlatformIdsReportList extends Component
     protected $listeners = ['statusUpdated' => 'refreshReportList'];
     
     public $csv_file;
+    protected $queryString = ['business_id_value','driver_id', 'business_id', 'branch_id', 'date_range', 'page'];
+
     public $business_id_value, $driver_id, $business_id, $branch_id, $date_range;
 
     public function mount(PlatformIdReportService $platformIdReportService, BusinessService $businessService, FieldService $fieldService, DriverService $driverService, BranchService $branchService)
@@ -118,7 +120,7 @@ class PlatformIdsReportList extends Component
         
         $main_menu = $this->main_menu;
         $menu = $this->menu;
-        $coordinatorReports = $this->platformIdReportService->all($this->perPage, null, $filters);
+        $coordinatorReports = $this->platformIdReportService->all($this->perPage, $this->page, $filters);
         // Get all businesses and their fields
         $businesses = $this->businessService->all();
         $fields = collect();
