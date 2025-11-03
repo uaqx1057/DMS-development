@@ -18,6 +18,8 @@ use App\Models\CoordinatorReport;
 use App\Models\BusinessCoordinatorReport;
 use App\Models\CoordinatorReportFieldValue;
 use Livewire\WithPagination;
+use App\Models\ImportLog;
+use Illuminate\Support\Facades\Auth;
 
 use App\Models\Field; // if you have dynamic field IDs
 
@@ -37,6 +39,7 @@ class CoordinatorReportList extends Component
     use WithFileUploads;
 
     public $csv_file;
+    public $report_date;
 
 
     public $driver_id, $business_id, $branch_id, $date_range;
@@ -342,72 +345,120 @@ public function exportPdf()
 }
 
 
-public function import()
+    public function import()
     {
         $this->validate([
-            'csv_file' => 'required|file|mimes:csv',
+            'report_date' => 'required|date',
+            'csv_file' => 'required|file|mimes:csv,txt',
         ]);
 
-        $path = $this->csv_file->getRealPath();
+        $user = Auth::user();
+        $file = $this->csv_file;
+        $path = $file->getRealPath();
+        $originalName = $file->getClientOriginalName();
+        $storedName = time() . '_' . $originalName;
+
         $rows = array_map('str_getcsv', file($path));
-        $header = array_map('strtolower', array_map('trim', $rows[0]));
-        unset($rows[0]); // remove header
+        $header = array_map(fn($h) => strtolower(trim($h)), $rows[0]);
+        unset($rows[0]);
+
+        $reportDate = \Carbon\Carbon::parse($this->report_date)->format('Y-m-d');
+
+        // Track imported rows count
+        $importedCount = 0;
+
+        $allFields = Field::pluck('id', 'short_name')->toArray();
+        $allFieldsByName = Field::pluck('id', 'name')->toArray();
 
         foreach ($rows as $row) {
             $rowData = array_combine($header, $row);
+            $iqamaNumber  = trim($rowData['iqama'] ?? '');
+            $businessName = trim($rowData['platform name'] ?? '');
+            $businessValue = trim($rowData['platform id'] ?? '');
 
-            // Get driver by iqaama_number
-            $driver = Driver::where('iqaama_number', $rowData['iqaama_number'])->first();
-            if (!$driver) continue;
+            if (!$iqamaNumber || !$businessName || !$businessValue) continue;
 
-            // Get business by name
-            $business = Business::where('name', $rowData['business_name'])->first();
-            if (!$business) continue;
+            $driver = Driver::where('iqaama_number', $iqamaNumber)->first();
+            $business = Business::where('name', $businessName)->first();
+            if (!$business || !$driver) continue;
 
-            // Create/find CoordinatorReport
-            $report = CoordinatorReport::firstOrCreate(
-                [
-                    'driver_id'   => $driver->id,
-                    'report_date' => $rowData['report_date'],
-                ],
-                [
-                    'status' => $rowData['status'] ?? 'pending',
-                    'wallet' => null
-                ]
-            );
+            $businessIdRecord = \App\Models\BusinessId::where([
+                ['value', $businessValue],
+                ['business_id', $business->id]
+            ])->first();
+            if (!$businessIdRecord) continue;
 
-            // Link business
-            BusinessCoordinatorReport::firstOrCreate([
-                'business_id' => $business->id,
-                'coordinator_report_id' => $report->id,
-            ]);
+            $branchId = $driver->branch_id;
+            $status = trim($rowData['status'] ?? 'Pending');
 
-            // Get dynamic field IDs
-            $fields = [
-                'total_orders' => 1,
-                'bonus'        => 2,
-                'tip'          => 3,
-                'other_tip'    => 4,
-            ];
+            $existingReport = CoordinatorReport::where('driver_id', $driver->id)
+                ->whereDate('report_date', $reportDate)
+                ->whereHas('businesses', fn($q) => $q->where('business_id', $business->id))
+                ->first();
 
-            foreach ($fields as $fieldKey => $fieldId) {
+            if (!$existingReport) {
+                $report = CoordinatorReport::create([
+                    'driver_id' => $driver->id,
+                    'branch_id' => $branchId,
+                    'report_date' => $reportDate,
+                    'status' => $status,
+                ]);
+
+                BusinessCoordinatorReport::firstOrCreate([
+                    'business_id' => $business->id,
+                    'coordinator_report_id' => $report->id,
+                ]);
+            } else {
+                $report = $existingReport;
+            }
+
+            $skip = ['driver_name', 'iqama', 'platform_name', 'platform_id', 'branch', 'status', 'date'];
+            foreach ($rowData as $key => $value) {
+                if (in_array($key, $skip)) continue;
+
+                $value = trim($value);
+                if ($value === '') continue;
+
+                $normalizedKey = strtolower(str_replace([' ', '-', '/'], '_', trim($key)));
+                $fieldId = $allFields[$normalizedKey] ?? $allFieldsByName[$normalizedKey] ?? null;
+                if (!$fieldId) continue;
+
                 CoordinatorReportFieldValue::updateOrCreate(
                     [
                         'coordinator_report_id' => $report->id,
                         'business_id'           => $business->id,
+                        'business_id_value'     => $businessIdRecord->id,
                         'field_id'              => $fieldId,
                     ],
                     [
-                        'value' => $rowData[$fieldKey] ?? 0
+                        'value' => $value,
                     ]
                 );
             }
+
+            $importedCount++;
         }
 
-        $this->reset('csv_file');
+        // Create Import Log
+        ImportLog::create([
+            'user_id' => $user?->id,
+            'file_name' => $storedName,
+            'original_name' => $originalName,
+            'report_date' => $reportDate,
+            'model' => CoordinatorReport::class,
+            'rows_imported' => $importedCount,
+            'meta' => [
+                'ip' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'timestamp' => now()->toDateTimeString(),
+            ],
+        ]);
+
+        $this->reset('csv_file', 'report_date');
         $this->dispatch('import-close-modal');
-        session()->flash('success', 'CSV Imported Successfully.');
+        session()->flash('success', 'CSV Imported Successfully. ' . $importedCount . ' rows imported.');
     }
+
 
     
     

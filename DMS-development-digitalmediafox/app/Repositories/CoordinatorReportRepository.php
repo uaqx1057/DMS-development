@@ -149,7 +149,7 @@ class CoordinatorReportRepository implements CoordinatorReportInterface
     }
 
   
-     public function create($data){
+    public function create($data){
         // Create Coordinator Report
         if (!isset($data['branch_id']) && isset($data['driver_id'])) {
             $driver = \App\Models\Driver::find($data['driver_id']);

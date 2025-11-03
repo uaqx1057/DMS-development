@@ -4,33 +4,76 @@
         :menu="$menu"
     />
 <!-- Import Modal -->
-<div wire:ignore.self class="modal fade" id="importModal" tabindex="-1">
+<div wire:ignore.self class="modal fade" id="importModal" tabindex="-1"
+     x-data="{ uploading: false }"
+     x-on:livewire-upload-start="uploading = true"
+     x-on:livewire-upload-finish="uploading = false"
+     x-on:livewire-upload-error="uploading = false">
+
     <div class="modal-dialog">
         <form wire:submit.prevent="import">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Import CSV</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close m-2" data-bs-dismiss="modal"></button>
                 </div>
+
                 <div class="modal-body">
+                    <label>Report Date:</label>
+                    <input type="date" wire:model="report_date" class="form-control">
+                    @error('report_date') <span class="text-danger">{{ $message }}</span> @enderror
+
+                    <br>
+
                     <input type="file" wire:model="csv_file" accept=".csv" class="form-control">
-                    
-                    <div class="d-flex align-items-center">
-                    @error('csv_file') <span class="text-danger">{{ $message }}</span> @enderror
-                     <span class="ms-2 text-muted small">Upload only .csv file format</span>
-                    
+
+                    {{-- Show loader while file uploading --}}
+                    <!-- <div x-show="uploading" class="mt-2 text-info small">
+                        <div class="spinner-border spinner-border-sm" role="status"></div>
+                        Uploading file...
+                    </div> -->
+
+                    <div class="d-flex align-items-center mt-2">
+                        @error('csv_file') <span class="text-danger">{{ $message }}</span> @enderror
+                        <span class="ms-2 text-muted small">Upload only .csv file format</span>
                     </div>
-                    
                 </div>
-                
+
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-success">Import</button>
+                    {{-- Import button --}}
+                    <button type="submit"
+                            class="btn btn-success"
+                            :disabled="uploading"
+                            wire:loading.attr="disabled"
+                            wire:target="import"
+                            x-bind:class="{ 'disabled': uploading }">
+                        
+                        {{-- Normal state --}}
+                        <span x-show="!uploading" wire:loading.remove wire:target="import">
+                            Import
+                        </span>
+
+                        {{-- While file uploading --}}
+                        <span x-show="uploading">
+                            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                            Uploading file...
+                        </span>
+
+                        {{-- While import submitting --}}
+                        <span wire:loading wire:target="import">
+                            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                            Importing...
+                        </span>
+                    </button>
+
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 </div>
             </div>
         </form>
     </div>
 </div>
+
+
 
     <x-ui.message />
     <livewire:modal />
