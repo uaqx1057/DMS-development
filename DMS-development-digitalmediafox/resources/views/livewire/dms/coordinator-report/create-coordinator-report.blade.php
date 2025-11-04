@@ -29,7 +29,8 @@
                         <!-- Begin: Report Date Card -->
                         <x-ui.col class="mb-3 col-lg-3 col-md-3">
                             <x-form.label for="report_date" name="Report Date" :required="true"/>
-                            <x-form.input-date  name="report_date" :placeholder="@translate('Report Date')"  wire:model='report_date'/>
+                            <x-form.input-date  name="report_date" :placeholder="@translate('Report Date')"  wire:model='report_date' 
+                                max="{{ now()->format('Y-m-d') }}"/>
                             <x-ui.alert error="report_date"/>
                         </x-ui.col>
                         <!-- End: Report Date Card -->

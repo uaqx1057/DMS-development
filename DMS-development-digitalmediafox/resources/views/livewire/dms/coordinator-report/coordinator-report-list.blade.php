@@ -20,7 +20,7 @@
 
                 <div class="modal-body">
                     <label>Report Date:</label>
-                    <input type="date" wire:model="report_date" class="form-control">
+                    <input type="date" wire:model="report_date" class="form-control" max="{{ now()->format('Y-m-d') }}">
                     @error('report_date') <span class="text-danger">{{ $message }}</span> @enderror
 
                     <br>
