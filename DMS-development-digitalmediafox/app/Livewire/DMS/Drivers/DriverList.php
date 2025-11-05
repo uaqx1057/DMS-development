@@ -84,6 +84,65 @@ class DriverList extends Component
         ));
     }
 
+    /** Open Driver View Modal */
+    public function openDriverView($id)
+    {
+        $driver = Driver::with(['driver_type', 'branch', 'businesses'])->findOrFail($id);
+
+        // Build platform info
+        $platforms = [];
+        $assignedIdsByBusiness = [];
+
+        foreach ($driver->businesses as $business) {
+            $assignedIds = $driver->businessIds()
+                ->where('business_id', $business->id)
+                ->wherePivot('transferred_at', null)
+                ->pluck('value')
+                ->toArray();
+
+            if ($assignedIds) {
+                $platforms[] = $business->name . ' (' . implode(', ', $assignedIds) . ')';
+                $assignedIdsByBusiness[$business->name] = $assignedIds;
+            }
+        }
+
+        // Format driver data (full details)
+        $driverData = [
+            'image' => $driver->image ?? null,
+            'driver_id' => $driver->driver_id ?? '-',
+            'name' => $driver->name ?? '-',
+            'nationality' => $driver->nationality ?? '-',
+            'language' => $driver->language ?? '-',
+            'branch' => $driver->branch?->name ?? '-',
+            'driver_type' => $driver->driver_type?->name ?? '-',
+            'dob' => $driver->dob ? date('d-m-Y', strtotime($driver->dob)) : '-',
+            'iqaama_number' => $driver->iqaama_number ?? '-',
+            'iqaama_expiry' => $driver->iqaama_expiry ? date('d-m-Y', strtotime($driver->iqaama_expiry)) : '-',
+            'absher_number' => $driver->absher_number ?? '-',
+            'sponsorship' => $driver->sponsorship ?? '-',
+            'sponsorship_id' => $driver->sponsorship_id ?? '-',
+            'license_expiry' => $driver->license_expiry ? date('d-m-Y', strtotime($driver->license_expiry)) : '-',
+            'insurance_policy_number' => $driver->insurance_policy_number ?? '-',
+            'insurance_expiry' => $driver->insurance_expiry ? date('d-m-Y', strtotime($driver->insurance_expiry)) : '-',
+            'vehicle_monthly_cost' => $driver->vehicle_monthly_cost ?? '-',
+            'mobile_data' => $driver->mobile_data ?? '-',
+            'fuel' => $driver->fuel ?? '-',
+            'gprs' => $driver->gprs ?? '-',
+            'government_levy_fee' => $driver->government_levy_fee ?? '-',
+            'accommodation' => $driver->accommodation ?? '-',
+            'email' => $driver->email ?? '-',
+            'mobile' => $driver->mobile ?? '-',
+            'remarks' => $driver->remarks ?? '-',
+            'created_at' => $driver->created_at ? $driver->created_at->format('d-m-Y H:i') : '-',
+            'platform_ids' => $platforms ? implode(' | ', $platforms) : '-',
+            'assigned_ids_by_business' => $assignedIdsByBusiness,
+        ];
+
+        // Dispatch to modal
+        $this->dispatch('openDriverView', $driverData);
+    }
+
+
     /** Export Driver List as CSV */
     public function exportCsv()
     {

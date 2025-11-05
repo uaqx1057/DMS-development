@@ -11,7 +11,8 @@
     'isModalRole' => false,
     'routeRole'=> null,
     'edit_permission' => false,
-    'showModal' => false
+    'showModal' => false,
+    'isModalView' => false
 ])
 
 <div class="card">
@@ -52,6 +53,7 @@
                 :perPage="$perPage"
                 :edit_permission="$edit_permission"
                 :showModal="$showModal"
+                :isModalView="$isModalView"
             />
         </table>
     </div>

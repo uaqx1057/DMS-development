@@ -1,4 +1,4 @@
-@props(['item', 'key', 'page', 'perPage', 'columns', 'isModalEdit' => false, 'isModalRole' => false, 'routeEdit'=> null, 'routeRole'=> null, 'routeView'=> null, 'edit_permission' => false, 'showModal' => false])
+@props(['item', 'key', 'page', 'perPage', 'columns', 'isModalEdit' => false, 'isModalRole' => false, 'routeEdit'=> null, 'routeRole'=> null, 'routeView'=> null, 'edit_permission' => false, 'showModal' => false, 'isModalView' => false])
 
 <tr wire:key="{{ $item->id . $page }}">
     <td class="">{{ ++$key + $perPage * ($page - 1) }}.</td>
@@ -37,6 +37,14 @@
                         <i class="align-middle ri-more-fill"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
+                        @if ($isModalView)
+                            <li>
+                                <button type="button" wire:click="openDriverView({{ $item['id'] }})" class="dropdown-item">
+                                    <i class="align-bottom ri-eye-fill me-2 text-muted"></i>
+                                    @translate('View')
+                                </button>
+                            </li>
+                        @endif
                         @if ($edit_permission)
                             @if ($isModalEdit)
 

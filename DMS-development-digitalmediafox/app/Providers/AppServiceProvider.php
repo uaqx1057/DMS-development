@@ -8,6 +8,8 @@ use App\Services\{AuthService, BranchService, BusinessService, CountryService, D
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
+use Livewire\Livewire;
+use App\Livewire\DMS\Drivers\DriverViewModal;
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -105,6 +107,7 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
+        Livewire::component('dms.drivers.driver-view-modal', DriverViewModal::class);
         Blade::directive('translate', function ($keyword) {
             return "<?php echo translate($keyword); ?>";
         });

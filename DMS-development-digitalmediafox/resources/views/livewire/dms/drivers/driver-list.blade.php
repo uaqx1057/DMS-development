@@ -19,6 +19,7 @@
                     :sortColumn="$sortColumn"
                     :sortDirection="$sortDirection"
                     isModalEdit="true"
+                    isModalView="true"
                     routeEdit="drivers.edit"
                     :edit_permission="$edit_permission"
                 />
@@ -26,4 +27,5 @@
             </x-ui.card>
         </x-ui.col>
     </x-ui.row>
+    <livewire:dms.drivers.driver-view-modal />
 </div>

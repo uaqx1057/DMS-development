@@ -126,6 +126,7 @@ trait DriverTrait
             'driver_type_id' => 'required|exists:driver_types,id',
             'branch_id' => 'required|exists:branches,id',
             "business_ids" => 'required|array',
+            'remarks'=>'nullable|string'
         ];
 
         if($this->driverId != null){
