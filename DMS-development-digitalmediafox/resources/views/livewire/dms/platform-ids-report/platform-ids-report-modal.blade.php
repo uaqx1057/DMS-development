@@ -84,11 +84,18 @@
                                                             @if($fieldData['type'] !== 'DOCUMENT')
                                                                 <tr>
                                                                     <td><strong>{{ $fieldName }}</strong></td>
-                                                                    <td>{{ $fieldData['value'] }}</td>
+                                                                    <td>
+                                                                        @if($fieldData['type'] === 'number')
+                                                                            ₹{{ number_format((float)$fieldData['value'], 2) }}
+                                                                        @else
+                                                                            {{ $fieldData['value'] ?: '0' }}
+                                                                        @endif
+                                                                    </td>
                                                                 </tr>
                                                             @endif
                                                         @endforeach
                                                     </tbody>
+
                                                 </table>
                                             </div>
                                         </div>

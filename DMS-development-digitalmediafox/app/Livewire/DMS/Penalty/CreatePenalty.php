@@ -61,7 +61,7 @@ class CreatePenalty extends Component
             'business_id_value' => 'required|exists:business_ids,id',
             'penalty_date' => 'required|date',
             'penalty_value' => 'required|numeric|min:0',
-            'penalty_file' => 'nullable|file|max:2048',
+            'penalty_file' => 'required|file|max:2048',
         ]);
 
         $filePath = $this->penalty_file ? $this->penalty_file->store('penalties', 'public') : null;

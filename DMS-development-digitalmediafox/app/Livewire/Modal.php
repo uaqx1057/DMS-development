@@ -15,24 +15,24 @@ class Modal extends Component
     protected $listeners = ['openModal' => 'show'];
 
     public function show($reportId)
-    {
-        // Load the report with all necessary relationships
-        $report = CoordinatorReport::with([
-            'driver',
-            'branch',
-            'businesses',
-            'report_fields.field', // Make sure we load the field relationship
-        ])->find($reportId);
+{
+    $report = CoordinatorReport::with([
+        'driver',
+        'branch',
+        'businesses.fields', // ensure all enabled fields of business are loaded
+        'report_fields' => function ($query) {
+            $query->with('field'); // load field details
+        },
+    ])->find($reportId);
 
-        if ($report) {
-            $this->reportData = $report->toArray();
-            $this->status = $report->status ?? 'Pending';
-            $this->totalOrders = $report->report_fields()
-                ->where('field_id', 1)
-                ->sum('value');
-            $this->showModal = true;
-        }
+    if ($report) {
+        $this->reportData = $report->toArray();
+        $this->status = $report->status ?? 'Pending';
+        $this->showModal = true;
     }
+}
+
+
 
     public function closeModal()
     {

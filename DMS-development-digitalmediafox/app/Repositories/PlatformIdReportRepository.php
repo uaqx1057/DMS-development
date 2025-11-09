@@ -355,39 +355,37 @@ class PlatformIdReportRepository implements CoordinatorReportInterface
     }
     public function getReportsByBusinessIdValue($businessIdValue)
     {
-        // Get the business ID record
-        $businessId = BusinessId::find($businessIdValue);
-        
-        if (!$businessId) {
+        $businessId = BusinessId::with('business.fields')->find($businessIdValue);
+
+        if (!$businessId || !$businessId->business) {
             return collect([]);
         }
 
-        // Get all coordinator reports that have fields with this business_id_value
+        $business = $businessId->business;
+        $enabledFields = $business->fields; // Fields enabled for this business
+
+        // Fetch all reports that have any field linked to this business_id_value
         $reports = CoordinatorReport::with([
             'report_fields.field',
             'driver',
             'branch',
             'businesses',
         ])
-        ->whereHas('report_fields', function ($query) use ($businessIdValue) {
-            $query->where('business_id_value', $businessIdValue);
-        })
+        ->whereHas('report_fields', fn($q) => $q->where('business_id_value', $businessIdValue))
         ->get();
 
-        // Transform the reports to include only fields for this business_id_value
-        $transformedReports = $reports->map(function ($report) use ($businessIdValue, $businessId) {
-            // Filter report fields for this business_id_value only
-            $filteredFields = $report->report_fields->filter(function ($field) use ($businessIdValue) {
-                return $field->business_id_value == $businessIdValue;
-            });
+        return $reports->map(function ($report) use ($enabledFields, $business, $businessId, $businessIdValue) {
+            // Filter only this platform’s report fields
+            $filteredFields = $report->report_fields->where('business_id_value', $businessIdValue)->keyBy('field_id');
 
-            // Create field values array
+            // Build normalized field data
             $fieldValues = [];
-            foreach ($filteredFields as $field) {
-                $fieldValues[$field->field->name] = [
-                    'value' => $field->value,
-                    'type' => $field->field->type,
-                    'field_id' => $field->field_id
+            foreach ($enabledFields as $field) {
+                $reportField = $filteredFields->get($field->id);
+                $fieldValues[$field->name] = [
+                    'value' => $reportField->value ?? 0,
+                    'type' => $field->type,
+                    'field_id' => $field->id
                 ];
             }
 
@@ -405,13 +403,12 @@ class PlatformIdReportRepository implements CoordinatorReportInterface
                     'name' => $report->branch->name ?? 'N/A',
                 ],
                 'business_id_value' => $businessIdValue,
-                'business_name' => $businessId->business->name ?? 'Unknown',
+                'business_name' => $business->name,
                 'platform_id' => $businessId->value,
                 'field_values' => $fieldValues,
             ];
         });
-
-        return $transformedReports;
     }
+
 
 }
