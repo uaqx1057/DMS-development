@@ -3,8 +3,9 @@
     'title' => '',
     'add' => true,
     'search' => false, // New prop to control search visibility
-     'export' => false,
-     'import'=>false,
+    'export' => false,
+    'import'=>false,
+    'addMenu' => null, 
 ])
 
 <div class="flex gap-2 card-header justify-content-between align-items-center">
@@ -25,11 +26,11 @@
                 <i class="align-bottom ri-file-excel-line me-1"></i> @translate('Export CSV')
             </button>
         @endif
-          @if ($import)
+        @if ($import)
            <!-- Button to open modal -->
-<button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#importModal">
-   <i class="align-bottom ri-upload-line me-1"></i> Import CSV
-</button>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#importModal">
+                <i class="align-bottom ri-upload-line me-1"></i> Import CSV
+            </button>
 
 <!-- Import Modal -->
 
@@ -37,10 +38,30 @@
 
         @endif
 
+        {{-- 🔹 Add button or custom menu --}}
         @if ($href && $add)
-            <a href="{{ $href }}" class="btn btn-success" wire:navigate>
-                <i class="align-bottom ri-add-line me-1"></i> @translate('Add New')
-            </a>
+            @if ($addMenu)
+                {{-- Dropdown menu --}}
+                <div class="btn-group">
+                    <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="align-bottom ri-add-line me-1"></i> @translate('Add New')
+                    </button>
+                    <ul class="dropdown-menu">
+                        @foreach ($addMenu as $item)
+                            <li>
+                                <a class="dropdown-item" href="{{ $item['url'] }}" wire:navigate>
+                                    <i class="{{ $item['icon'] ?? 'ri-add-line' }} me-1"></i> @translate($item['label'])
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @else
+                {{-- Normal single Add button --}}
+                <a href="{{ $href }}" class="btn btn-success" wire:navigate>
+                    <i class="align-bottom ri-add-line me-1"></i> @translate('Add New')
+                </a>
+            @endif
         @endif
     </div>
 </div>

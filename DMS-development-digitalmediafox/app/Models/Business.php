@@ -69,4 +69,9 @@ class Business extends Model
     {
         return $this->belongsToMany(Driver::class);
     }
+    public function businessIds()
+    {
+        return $this->hasMany(BusinessId::class, 'business_id');
+    }
+
 }

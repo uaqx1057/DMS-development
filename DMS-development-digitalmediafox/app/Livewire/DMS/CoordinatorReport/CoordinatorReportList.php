@@ -41,6 +41,8 @@ class CoordinatorReportList extends Component
     public $csv_file;
     public $report_date;
 
+    public $report_platform_name;
+
 
     public $driver_id, $business_id, $branch_id, $date_range;
     protected $queryString = ['driver_id', 'business_id', 'branch_id', 'date_range', 'page'];
@@ -349,6 +351,7 @@ public function exportPdf()
     {
         $this->validate([
             'report_date' => 'required|date',
+            'report_platform_name' => 'required',
             'csv_file' => 'required|file|mimes:csv,txt',
         ]);
 
@@ -373,7 +376,7 @@ public function exportPdf()
         foreach ($rows as $row) {
             $rowData = array_combine($header, $row);
             $iqamaNumber  = trim($rowData['iqama'] ?? '');
-            $businessName = trim($rowData['platform name'] ?? '');
+            $businessName = trim(string: $this->report_platform_name ?? '');
             $businessValue = trim($rowData['platform id'] ?? '');
 
             if (!$iqamaNumber || !$businessName || !$businessValue) continue;

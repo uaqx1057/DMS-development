@@ -12,6 +12,7 @@ return [
     'COORDINATORREPORT' => 9,
     'PLATFORMIDSREPORT' => 16,
     'LOGS' => 17,
+    'PENALTY' => 17,
     'PAYROLL' => 10,
     'REVENUEREPORTING' => 11,
     'BUSINESSFIELDS' => 12,

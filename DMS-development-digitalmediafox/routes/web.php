@@ -8,6 +8,7 @@ use App\Livewire\DMS\Drivers\{CreateDriver, DriverList, EditDriver, ShowDriver};
 use App\Livewire\DMS\Businesses\{BusinessList, CreateBusiness, EditBusiness};
 use App\Livewire\DMS\BusinessesId\{BusinessIdList, CreateBusinessId, EditBusinessId};
 use App\Livewire\DMS\CoordinatorReport\{CoordinatorReportList, CreateCoordinatorReport, EditCoordinatorReport, ImportLogList};
+use App\Livewire\DMS\Penalty\{PenaltyList, CreatePenalty};
 use App\Livewire\DMS\PlatformIdsReport\{PlatformIdsReportList};
 use App\Livewire\DMS\Fields\{FieldList, CreateField};
 use App\Livewire\DMS\Payroll\PayrollList;
@@ -131,6 +132,10 @@ Route::get('/orders', OrderDetails::class)->name('orders.index');
              Route::get('/', ImportLogList::class)->name('index')->middleware('permission:' . config('const.LOGS') . ',' . config('const.VIEW'));
         });
 
+        Route::prefix('penalty')->as('penalty.')->group(function () {
+            Route::get('/', PenaltyList::class)->name('index')->middleware('permission:' . config('const.PENALTY') . ',' . config('const.VIEW'));
+            Route::get('/create', CreatePenalty::class)->name('create')->middleware('permission:' . config('const.PENALTY') . ',' . config('const.ADD'));
+        });
         // Payroll Routes
         Route::prefix('payroll')->as('payroll.')->group(function () {
             Route::get('/', PayrollList::class)->name('index')->middleware('permission:' . config('const.PAYROLL') . ',' . config('const.VIEW'));

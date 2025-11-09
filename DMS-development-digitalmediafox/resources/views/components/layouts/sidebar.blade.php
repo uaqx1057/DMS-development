@@ -1,6 +1,24 @@
 <!-- Sidebar Wrapper -->
 <div id="sidebar" class="app-menu navbar-menu d-block-lg" style="background:#722c81;border-right:1px solid #722c81;" wire:ignore>
-    <!-- Navbar Brand -->
+<style>
+    /* Sidebar with custom scrollbar */
+#sidebar {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+#sidebar::-webkit-scrollbar {
+    width: 3px;
+}
+#sidebar::-webkit-scrollbar-thumb {
+    border-radius: 3px;
+}
+#sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: #decce2ff transparent;
+}
+</style>    
+<!-- Navbar Brand -->
+     
     <x-ui.navbar-brand/>
     
     <!-- Sidebar Menu -->
@@ -34,11 +52,10 @@
                     @endif
 
                     @php
-$showModule = $module->operations->some(function ($operation) use ($module) {
-    return getModulePrivilege($operation->id) || getModulePrivilege($module->id);
-}) && $module->id !== 1;
-@endphp
-
+                        $showModule = $module->operations->some(function ($operation) use ($module) {
+                            return getModulePrivilege($operation->id) || getModulePrivilege($module->id);
+                        }) && $module->id !== 1;
+                    @endphp
 
                     @if ($showModule)
                         <x-ui.sidebar.menu
@@ -51,13 +68,34 @@ $showModule = $module->operations->some(function ($operation) use ($module) {
                         >
                             @foreach ($module->operations as $operation)
                                 @if (getModulePrivilege($operation->id) || getModulePrivilege($module->id))
-                                    <x-ui.sidebar.menu-item
-                                        :label="$operation->name"
-                                        :route="$operation->route"
-                                        reload-page
-                                    />
-                                @endif
+                                    
+                                    @if ($operation->is_collapseable)
+                                        {{-- Nested submenu (e.g., Logs under DMS) --}}
+                                        <x-ui.sidebar.submenu
+                                            :dataId="$operation->id"
+                                            :label="$operation->name"
+                                            :route="$operation->route"
+                                        >
+                                            @foreach ($operation->operations as $subOperation)
+                                                @if (getModulePrivilege($subOperation->id) || getModulePrivilege($operation->id))
+                                                    <x-ui.sidebar.menu-item
+                                                        :label="$subOperation->name"
+                                                        :route="$subOperation->route"
+                                                        reload-page
+                                                    />
+                                                @endif
+                                            @endforeach
+                                        </x-ui.sidebar.submenu>
+                                    @else
+                                        {{-- Regular menu item --}}
+                                        <x-ui.sidebar.menu-item
+                                            :label="$operation->name"
+                                            :route="$operation->route"
+                                            reload-page
+                                        />
+                                    @endif
 
+                                @endif
                             @endforeach
                         </x-ui.sidebar.menu>
                     @endif
@@ -138,6 +176,10 @@ $showModule = $module->operations->some(function ($operation) use ($module) {
     }
 }
 
+/* Nested submenu styling */
+.nav-sm .nav-sm {
+    padding-left: 1rem;
+}
 </style>
 
 <script>

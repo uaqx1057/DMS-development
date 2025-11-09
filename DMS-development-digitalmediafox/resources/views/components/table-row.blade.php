@@ -12,6 +12,11 @@
         @if ($column['isData'])
        {!! $this->customFormat($column, $column['hasRelation'] ? data_get($item, $column['column'].'.'.$column['columnRelation']) : data_get($item, $column['column'])) !!}
 
+       @elseif ($column['column'] == 'penalty_file')
+            @if(isset($item->penalty_file))
+                {{-- For Platform IDs Report - pass business_id_value --}}
+                <a href="{{ Storage::url('app/public/' . $item->penalty_file) }}" target="_blank" class="btn btn-sm btn-primary">View Proof</a>
+            @endif
         @elseif ($column['column'] === 'view')
             @if(isset($item->business_id_value))
                 {{-- For Platform IDs Report - pass business_id_value --}}

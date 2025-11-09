@@ -25,6 +25,20 @@
 
                     <br>
 
+                    <!-- Begin: Business Card -->
+                    <div class="mb-3">
+                        <label for="business_id">Platform Name</label>
+                        <select wire:model="report_platform_name" class="form-control">
+                            <option>--select Platform--</option>
+                            @foreach ($businesses as $item)
+                                <option value="{{ $item->name }}">{{ $item->name }}</option>
+                            @endforeach
+                        </select>
+                         @error('report_platform_id') <span class="text-danger">{{ $message }}</span> @enderror
+
+                    </div>
+                    <!-- End: Business Card -->
+
                     <input type="file" wire:model="csv_file" accept=".csv" class="form-control">
 
                     {{-- Show loader while file uploading --}}
@@ -154,7 +168,10 @@
             <x-ui.card>
 
 
-                <x-ui.card-header title="Coordinator Report List" :href="route('coordinator-report.create')" :add="$add_permission" :import=true :export="$coordinatorReports->count() > 0">
+                <x-ui.card-header title="Coordinator Report List" :href="route('coordinator-report.create')" :addMenu="[
+                        ['label' => 'Add Daily Report', 'url' => route('coordinator-report.create'), 'icon' => 'ri-file-list-line'],
+                        ['label' => 'Add Previous Penalties', 'url' => route('penalty.create'), 'icon' => 'ri-error-warning-line'],
+                    ]" :import=true :export="$coordinatorReports->count() > 0">
                     @if($coordinatorReports->count() > 0)
                         <div class="d-flex gap-2">
                             <button wire:click="exportCsv" class="btn btn-secondary btn-sm">
