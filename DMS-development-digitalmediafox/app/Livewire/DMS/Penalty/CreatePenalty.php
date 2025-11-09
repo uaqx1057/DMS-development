@@ -77,7 +77,14 @@ class CreatePenalty extends Component
                 'branch_id' => optional(Driver::find($this->driver_id))->branch_id,
             ]
         );
+        if (!empty($this->business_id_value)) {
+                $businessTypeIds = BusinessId::whereIn('id', [$this->business_id_value])
+                    ->pluck('business_id')
+                    ->unique()
+                    ->toArray();
 
+                $report->businesses()->syncWithoutDetaching($businessTypeIds);
+            }
         // Check existing field value (field_id = 14)
         $fieldValue = CoordinatorReportFieldValue::where('coordinator_report_id', $report->id)
             ->where('business_id', $this->business_id)
