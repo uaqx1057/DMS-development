@@ -108,6 +108,7 @@ class DriverList extends Component
 
         // Format driver data (full details)
         $driverData = [
+            'id' => $driver->id ?? null,
             'image' => $driver->image ?? null,
             'driver_id' => $driver->driver_id ?? '-',
             'name' => $driver->name ?? '-',
