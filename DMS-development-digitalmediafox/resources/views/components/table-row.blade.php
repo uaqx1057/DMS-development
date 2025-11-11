@@ -44,10 +44,10 @@
                     <ul class="dropdown-menu dropdown-menu-end">
                         @if ($isModalView)
                             <li>
-                                <button type="button" wire:click="openDriverView({{ $item['id'] }})" class="dropdown-item">
+                                <a href="{{ route('drivers.view', $item['id']) }}" wire:navigate class="dropdown-item edit-item-btn">
                                     <i class="align-bottom ri-eye-fill me-2 text-muted"></i>
                                     @translate('View')
-                                </button>
+                                </a>
                             </li>
                         @endif
                         @if ($edit_permission)

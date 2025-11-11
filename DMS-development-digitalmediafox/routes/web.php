@@ -2,6 +2,7 @@
 
 use App\Livewire\Auth\Login;
 use App\Livewire\Dashboard;
+use App\Livewire\DMS\Drivers\DriverCoordinateReport;
 use App\Livewire\Employee\{CreateEmployee, EditEmployee, EmployeeList};
 use App\Livewire\DMS\DriverTypes\{CreateDriverType, DriverTypeList, EditDriverType};
 use App\Livewire\DMS\Drivers\{CreateDriver, DriverList, EditDriver, ShowDriver};
@@ -94,6 +95,8 @@ Route::get('/orders', OrderDetails::class)->name('orders.index');
             // ->middleware('permission:' . config('const.DRIVERS') . ',' . config('const.ADD'));
             Route::get('/edit/{id}', EditDriver::class)->name('edit')->middleware('permission:' . config('const.DRIVERS') . ',' . config('const.EDIT'));
             Route::get('/show/{id}', ShowDriver::class)->name('show')->middleware('permission:' . config('const.DRIVERS') . ',' . config('const.VIEW'));
+
+            Route::get('/view/{id}', DriverCoordinateReport::class)->name('view')->middleware('permission:' . config('const.DRIVERS') . ',' . config('const.VIEW'));
         });
 
         // Business Fields Routes
