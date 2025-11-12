@@ -43,4 +43,8 @@ class BusinessId extends Model
     {
         return $this->hasMany(DriverBusinessId::class)->orderBy('assigned_at', 'desc');
     }
+    public function reportFieldValues()
+    {
+        return $this->hasMany(CoordinatorReportFieldValue::class, 'business_id_value');
+    }
 }

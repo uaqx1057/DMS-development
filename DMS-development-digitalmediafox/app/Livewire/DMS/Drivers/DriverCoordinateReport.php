@@ -100,22 +100,36 @@ class DriverCoordinateReport extends Component
     {
         $driver = Driver::with(['driver_type', 'branch', 'businesses'])->findOrFail($this->driver_id);
 
-        // Build platform info
+        // Build platform info for currently assigned IDs
         $platforms = [];
         $assignedIdsByBusiness = [];
+        $currentAssignedBusinessIds = [];
 
         foreach ($driver->businesses as $business) {
             $assignedIds = $driver->businessIds()
                 ->where('business_id', $business->id)
                 ->wherePivot('transferred_at', null)
-                ->pluck('value')
-                ->toArray();
+                ->get();
 
-            if ($assignedIds) {
-                $platforms[] = $business->name . ' (' . implode(', ', $assignedIds) . ')';
-                $assignedIdsByBusiness[$business->name] = $assignedIds;
+            if ($assignedIds->isNotEmpty()) {
+                $assignedValues = $assignedIds->pluck('value')->toArray();
+                $platforms[] = $business->name . ' (' . implode(', ', $assignedValues) . ')';
+                $assignedIdsByBusiness[$business->name] = $assignedValues;
+                
+                // Collect current assigned BusinessId IDs
+                $currentAssignedBusinessIds = array_merge($currentAssignedBusinessIds, $assignedIds->pluck('id')->toArray());
             }
         }
+
+        // Get all BusinessIds that have coordinator reports for this driver (current + historical)
+        $allPlatformIds = \App\Models\BusinessId::whereHas('reportFieldValues', function($query) {
+            $query->whereHas('coordinatorReport', function($q) {
+                $q->where('driver_id', $this->driver_id);
+            });
+        })
+        ->with('business')
+        ->distinct()
+        ->get();
 
         // Format driver data (full details)
         $driverData = [
@@ -164,7 +178,6 @@ class DriverCoordinateReport extends Component
         $filters = [
             'driver_id' => $this->driver_id,
             'date_range' => $this->date_range,
-            'business_id' => $this->business_id,
             'business_id_value' => $this->business_id_value,
             'branch_id' => $this->branch_id,
         ];
@@ -182,19 +195,13 @@ class DriverCoordinateReport extends Component
         $add_permission = CheckPermission(config('const.ADD'), config('const.COORDINATORREPORT'));
         $edit_permission = CheckPermission(config('const.EDIT'), config('const.COORDINATORREPORT'));
         
-       // $drivers = $this->driverService->all();
-       
-       
-        
         if (auth()->user()->role_id!=1) {
-        $drivers = Driver::where('branch_id',$this->branch_id)->get();
+            $drivers = Driver::where('branch_id',$this->branch_id)->get();
         }else {
             $drivers = Driver::all();
         }
 
         $branches = Branch::whereIn('id',$branchIds)->get();
-        
-        // $businesses already defined above
         
         $columns = [
             ['label' => 'Date', 'column' => 'report_date', 'isData' => true, 'hasRelation' => false, 'format' => 'date'],
@@ -238,12 +245,28 @@ class DriverCoordinateReport extends Component
         
         // Calculate total orders by summing the "Total Orders" field value from all reports
         $totalOrdersCount = $coordinatorReports->sum(function($report) {
-            // Get the Total Orders field value from the expanded attributes
             return floatval($report->{'Total Orders'} ?? 0);
         });
-        // $businesses = $coordinatorReports->pluck('business_name')->unique()->values()->toArray();
-        // logger($businesses);
-        return view('livewire.dms.drivers.driver-coordinate-report', compact('driverData','main_menu', 'menu', 'coordinatorReports', 'fields', 'add_permission', 'edit_permission', 'columns', 'drivers', 'pendingReportsCount', 'completedReportsCount', 'totalOrdersCount', 'businesses', 'branches','totalBranches'));
+        
+        return view('livewire.dms.drivers.driver-coordinate-report', compact(
+            'driverData',
+            'main_menu', 
+            'menu', 
+            'coordinatorReports', 
+            'fields', 
+            'add_permission', 
+            'edit_permission', 
+            'columns', 
+            'drivers', 
+            'pendingReportsCount', 
+            'completedReportsCount', 
+            'totalOrdersCount', 
+            'businesses', 
+            'branches',
+            'totalBranches',
+            'allPlatformIds',
+            'currentAssignedBusinessIds'
+        ));
     }
 
     public function exportCsv()

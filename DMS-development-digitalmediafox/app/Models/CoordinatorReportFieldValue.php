@@ -26,5 +26,9 @@ class CoordinatorReportFieldValue extends Model
         {
         return $this->belongsTo(Driver::class);
     }
+    public function coordinatorReport(): BelongsTo
+    {
+        return $this->belongsTo(CoordinatorReport::class);
+    }
 
 }

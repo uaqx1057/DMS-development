@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Employee;
 
+use App\Services\DepartmentService;
+use App\Services\EmployeeService;
 use Illuminate\Validation\ValidationException;
 use App\Services\DesignationService;
 use App\Traits\Employee\EmployeeTrait;
@@ -18,6 +20,22 @@ class CreateEmployee extends Component
     public string $main_menu = 'Employees';
     public string $menu = 'Create Employee';
     public $form = [];
+
+    // ✅ Define properties for the services
+    protected DesignationService $designationService;
+    protected DepartmentService $departmentService;
+    protected EmployeeService $employeeService;
+
+    // ✅ Use Livewire's "mount" method for initialization
+    public function mount(
+        DesignationService $designationService,
+        DepartmentService $departmentService,
+        EmployeeService $employeeService
+    ) {
+        $this->designationService = $designationService;
+        $this->departmentService = $departmentService;
+        $this->employeeService = $employeeService;
+    }
     
 
 

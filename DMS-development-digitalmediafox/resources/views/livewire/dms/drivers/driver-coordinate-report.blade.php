@@ -99,7 +99,6 @@
         </div>
     </div>
     <div>
-        <x-layouts.breadcrumb :main_menu="$main_menu" :menu="$menu" />
         <!-- Import Modal -->
         <div wire:ignore.self class="modal fade" id="importModal" tabindex="-1" x-data="{ uploading: false }"
             x-on:livewire-upload-start="uploading = true" x-on:livewire-upload-finish="uploading = false"
@@ -209,31 +208,23 @@
                 </x-ui.col>
                 <!-- End: Driver Card -->
                 <!-- Begin: Business Card -->
+                 @if(count($allPlatformIds)>1)
                 <x-ui.col class="mb-3 col-lg-3 col-md-3">
                     <x-form.label for="business_id_value" name="Platform" />
                     <x-form.select wire:model.lazy="business_id_value">
                         <x-form.option value="" name="--select Platform--" />
-                        @foreach ($businesses as $business)
+                        @foreach ($allPlatformIds as $businessIdRecord)
                             @php
-                                $assignedIds = $driverData['assigned_ids_by_business'][$business->name] ?? [];
+                                $isCurrentAssignment = in_array($businessIdRecord->id, $currentAssignedBusinessIds);
+                                $label = $businessIdRecord->business->name . ' (' . $businessIdRecord->value . ')';
+                                $label .= !$isCurrentAssignment ? ' [Old]' : '';
                             @endphp
-                            @if (!empty($assignedIds))
-                                @foreach ($assignedIds as $businessValue)
-                                    @php
-                                        // Get the actual BusinessId record to pass its ID
-                                        $businessIdRecord = \App\Models\BusinessId::where([
-                                            ['business_id', $business->id],
-                                            ['value', $businessValue]
-                                        ])->first();
-                                        $displayName = $business->name . ' (' . $businessValue . ')';
-                                    @endphp
-                                    <x-form.option value="{{ $businessIdRecord->id ?? '' }}" :name="$displayName" />
-                                @endforeach
-                            @endif
+                            <x-form.option value="{{ $businessIdRecord->id }}" :name="$label" />
                         @endforeach
                     </x-form.select>
                     <x-ui.alert error="business_id_value" />
                 </x-ui.col>
+                @endif
 
                 <!-- End: Business Card -->
                 <!-- Begin: Branch Card -->
@@ -243,7 +234,14 @@
                     <x-form.select class="form-select" wire:model.lazy="branch_id">
                         <x-form.option value="" name="--select branch--" />
                         @foreach ($branches as $branch)
-                            <x-form.option value="{{ $branch->id }}" :name="$branch->name" />
+                            @php
+                                if($driverData['branch'] == $branch->name){
+                                    $displayBranchName = $branch->name;
+                                } else{
+                                    $displayBranchName = $branch->name . ' ( old )';
+                                }
+                            @endphp
+                            <x-form.option value="{{ $branch->id }}" :name="$displayBranchName" />
                         @endforeach
                     </x-form.select>
                     <x-ui.alert error="branch_id" />
@@ -251,17 +249,7 @@
                 @endif
                 <!-- End: Branch Card -->
             </div>
-            <div class="row">
-                <div class="col-xl-12">
-                    <div class="card crm-widget">
-                        <div class="p-0 card-body">
-                            <div class="row row-cols-md-3 row-cols-1">
-
-                            </div><!-- end row -->
-                        </div><!-- end card body -->
-                    </div><!-- end card -->
-                </div><!-- end col -->
-            </div><!-- end row -->
+            
             {{-- Stats Section --}}
             <div class="row">
                 <div class="col-xl-12">
@@ -285,7 +273,7 @@
                 <x-ui.card>
 
 
-                    <x-ui.card-header title="Coordinator Report List" :add="false" :href="route('coordinator-report.create')" :addMenu="[
+                    <x-ui.card-header title="" :add="false" :href="route('coordinator-report.create')" :addMenu="[
                         [
                             'label' => 'Add Daily Report',
                             'url' => route('coordinator-report.create'),
