@@ -62,7 +62,7 @@ class CoordinatorReportRepository implements CoordinatorReportInterface
             $groupedFields = $report->report_fields->groupBy('business_id_value');
 
             foreach ($groupedFields as $businessIdValue => $fieldsGroup) {
-                // 🔹 CRITICAL FIX: Apply business_id filter at expansion level
+                // 🔹 Apply business_id filter at expansion level (keep old filter)
                 if (!empty($filters['business_id'])) {
                     $firstField = $fieldsGroup->first();
                     if (!$firstField || $firstField->business_id != $filters['business_id']) {
@@ -70,7 +70,7 @@ class CoordinatorReportRepository implements CoordinatorReportInterface
                     }
                 }
 
-                // 🔹 CRITICAL FIX: Apply business_id_value filter at expansion level
+                // 🔹 Apply business_id_value filter at expansion level (new filter)
                 if (!empty($filters['business_id_value']) && $businessIdValue != $filters['business_id_value']) {
                     continue;
                 }
@@ -116,9 +116,11 @@ class CoordinatorReportRepository implements CoordinatorReportInterface
                 $expandedResults->push($reportModel);
             }
         }
+        
         if (is_null($perPage)) {
             return $expandedResults;
         }
+        
         $currentPage = $currentPage ?: LengthAwarePaginator::resolveCurrentPage();
         return $this->paginateCollection($expandedResults, $perPage, $currentPage, $filters);
     }

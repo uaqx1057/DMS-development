@@ -45,7 +45,8 @@ class DriverCoordinateReport extends Component
 
 
     public $driver_id, $business_id, $branch_id, $date_range;
-    protected $queryString = ['driver_id', 'business_id', 'branch_id', 'date_range', 'page'];
+    public $business_id_value;
+    protected $queryString = ['driver_id', 'business_id','business_id_value', 'branch_id', 'date_range', 'page'];
 
     public function mount($id,CoordinatorReportService $coordinatorReportService, BusinessService $businessService, FieldService $fieldService, DriverService $driverService, BranchService $branchService)
     {
@@ -74,7 +75,7 @@ class DriverCoordinateReport extends Component
     public function updated($propertyName)
     {
         // Trigger filtering logic whenever a filter value changes
-        if (in_array($propertyName, ['driver_id', 'business_id', 'branch_id', 'date_range'])) {
+        if (in_array($propertyName, ['driver_id', 'business_id', 'branch_id', 'date_range','business_id_value'])) {
             $this->reset('page');// Reset pagination to first page when filter changes
         }
     }
@@ -164,6 +165,7 @@ class DriverCoordinateReport extends Component
             'driver_id' => $this->driver_id,
             'date_range' => $this->date_range,
             'business_id' => $this->business_id,
+            'business_id_value' => $this->business_id_value,
             'branch_id' => $this->branch_id,
         ];
         
@@ -251,6 +253,7 @@ class DriverCoordinateReport extends Component
             'date_range'  => $this->date_range,
             'business_id' => $this->business_id,
             'branch_id'   => $this->branch_id,
+            'business_id_value' => $this->business_id_value,
         ];
 
         // Get reports with a large page size to effectively get all records
@@ -353,6 +356,7 @@ class DriverCoordinateReport extends Component
             'driver_id'   => $this->driver_id,
             'date_range'  => $this->date_range,
             'business_id' => $this->business_id,
+            'business_id_value' => $this->business_id_value,
             'branch_id'   => $this->branch_id,
         ];
 

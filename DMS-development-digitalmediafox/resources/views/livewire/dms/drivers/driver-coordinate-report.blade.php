@@ -209,22 +209,30 @@
                 </x-ui.col>
                 <!-- End: Driver Card -->
                 <!-- Begin: Business Card -->
-               <x-ui.col class="mb-3 col-lg-3 col-md-3">
-                    <x-form.label for="business_id" name="Business and Ids" />
-                    <x-form.select wire:model.lazy="business_id">
-                        <x-form.option value="" name="--select Business and Ids--" />
-                        @foreach ($businesses as $item)
+                <x-ui.col class="mb-3 col-lg-3 col-md-3">
+                    <x-form.label for="business_id_value" name="Platform" />
+                    <x-form.select wire:model.lazy="business_id_value">
+                        <x-form.option value="" name="--select Platform--" />
+                        @foreach ($businesses as $business)
                             @php
-                                $assignedIds = $driverData['assigned_ids_by_business'][$item->name] ?? [];
+                                $assignedIds = $driverData['assigned_ids_by_business'][$business->name] ?? [];
                             @endphp
                             @if (!empty($assignedIds))
-                                @php $displayName = $item->name . ' (' . implode(', ', $assignedIds) . ')'; @endphp
-                                <x-form.option value="{{ $item->id }}" :name="$displayName" />
+                                @foreach ($assignedIds as $businessValue)
+                                    @php
+                                        // Get the actual BusinessId record to pass its ID
+                                        $businessIdRecord = \App\Models\BusinessId::where([
+                                            ['business_id', $business->id],
+                                            ['value', $businessValue]
+                                        ])->first();
+                                        $displayName = $business->name . ' (' . $businessValue . ')';
+                                    @endphp
+                                    <x-form.option value="{{ $businessIdRecord->id ?? '' }}" :name="$displayName" />
+                                @endforeach
                             @endif
                         @endforeach
-
                     </x-form.select>
-                    <x-ui.alert error="business_id" />
+                    <x-ui.alert error="business_id_value" />
                 </x-ui.col>
 
                 <!-- End: Business Card -->
