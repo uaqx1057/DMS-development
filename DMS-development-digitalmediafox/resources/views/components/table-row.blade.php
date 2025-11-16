@@ -1,4 +1,4 @@
-@props(['item', 'key', 'page', 'perPage', 'columns', 'isModalEdit' => false, 'isModalRole' => false, 'routeEdit'=> null, 'routeRole'=> null, 'routeView'=> null, 'edit_permission' => false, 'showModal' => false, 'isModalView' => false])
+@props(['item', 'key', 'page', 'perPage', 'columns', 'isModalEdit' => false, 'isModalRole' => false, 'routeEdit'=> null, 'routeRole'=> null, 'routeView'=> null, 'edit_permission' => false, 'showModal' => false, 'isModalView' => false, 'delete_booklet' => false])
 
 <tr wire:key="{{ $item->id . $page }}">
     <td class="">{{ ++$key + $perPage * ($page - 1) }}.</td>
@@ -68,6 +68,25 @@
                                     </a>
                                 </li>
                             @endif
+                        @endif
+                        @if (auth()->user()->role->name == 'operation supervisor' || auth()->user()->role->name == 'cashier')
+                            <li>
+                                <a href="{{ route('drivers.create-receipt', $item['id']) }}" wire:navigate class="dropdown-item edit-item-btn">
+                                    <i class="align-bottom ri-add-line me-2 text-muted"></i>
+                                    @translate('Add Receipt')
+                                </a>
+                            </li>
+                        @endif
+
+
+                        @if ($delete_booklet)
+                            <button class="dropdown-item edit-item-btn"
+                            wire:click="delete({{ $item->id }})"
+                            onclick="return confirm('Are you sure you want to delete this booklet?')"
+                            >
+                                <i class="align-bottom ri-delete-bin-fill me-2 text-muted"></i>
+                                    @translate('Delete')
+                            </button>
                         @endif
                     </ul>
                 </div>

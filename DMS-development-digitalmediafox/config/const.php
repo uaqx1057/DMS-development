@@ -7,6 +7,8 @@ return [
     'DMS' => 4,
     'DRIVERTYPES' => 5,
     'DRIVERS' => 6,
+    'DRIVERDIFFERENCE' => 20,
+    'BOOKLET' => 21,
     'BUSINESSES' => 7,
     // 'BUSINESSESID' => 8,
     'COORDINATORREPORT' => 8,

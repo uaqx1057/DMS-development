@@ -2,6 +2,12 @@
 
 use App\Livewire\Auth\Login;
 use App\Livewire\Dashboard;
+use App\Livewire\DMS\Booklet\BookletList;
+use App\Livewire\DMS\Booklet\CreateBooklet;
+use App\Livewire\DMS\Booklet\EditBooklet;
+use App\Livewire\DMS\DriverDifference\CreateDriverDifference;
+use App\Livewire\DMS\DriverDifference\DriverDifferenceList;
+use App\Livewire\DMS\Drivers\CreateReceipt;
 use App\Livewire\DMS\Drivers\DriverCoordinateReport;
 use App\Livewire\Employee\{CreateEmployee, EditEmployee, EmployeeList};
 use App\Livewire\DMS\DriverTypes\{CreateDriverType, DriverTypeList, EditDriverType};
@@ -67,7 +73,7 @@ Route::get('/orders', OrderDetails::class)->name('orders.index');
         });
 
         // Employee Routes
-        Route::prefix('employee')->as('employee.')->group(function () {
+        Route::prefix('employee')->as('employee.')->group(callback: function () {
             Route::get('/', EmployeeList::class)->name('index')->middleware('permission:' . config('const.EMPLOYEES') . ',' . config('const.VIEW'));
             Route::get('/create', CreateEmployee::class)->name('create')->middleware('permission:' . config('const.EMPLOYEES') . ',' . config('const.ADD'));
             Route::get('/edit/{id}', EditEmployee::class)->name('edit')->middleware('permission:' . config('const.EMPLOYEES') . ',' . config('const.EDIT'));
@@ -97,6 +103,19 @@ Route::get('/orders', OrderDetails::class)->name('orders.index');
             Route::get('/show/{id}', ShowDriver::class)->name('show')->middleware('permission:' . config('const.DRIVERS') . ',' . config('const.VIEW'));
 
             Route::get('/view/{id}', DriverCoordinateReport::class)->name('view')->middleware('permission:' . config('const.DRIVERS') . ',' . config('const.VIEW'));
+
+            Route::get('/create-receipt/{id}', CreateReceipt::class)->name('create-receipt');
+        });
+
+        Route::prefix('driver-difference')->as('driver-difference.')->group(function () {
+            Route::get('/', DriverDifferenceList::class)->name('index')->middleware('permission:' . config('const.DRIVERDIFFERENCE') . ',' . config('const.VIEW'));
+            Route::get('/create', CreateDriverDifference::class)->name('create')->middleware('permission:' . config('const.DRIVERDIFFERENCE') . ',' . config('const.ADD'));
+        });
+
+        Route::prefix('booklet')->as('booklet.')->group(function () {
+            Route::get('/', BookletList::class)->name('index')->middleware('permission:' . config('const.BOOKLET') . ',' . config('const.VIEW'));
+            Route::get('/create', CreateBooklet::class)->name('create')->middleware('permission:' . config('const.BOOKLET') . ',' . config('const.ADD'));
+             Route::get('/edit/{id}', EditBooklet::class)->name('edit')->middleware('permission:' . config('const.BOOKLET') . ',' . config('const.EDIT'));
         });
 
         // Business Fields Routes

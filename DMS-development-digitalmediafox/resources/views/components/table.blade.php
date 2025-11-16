@@ -6,6 +6,7 @@
     'perPage',
     'sortDirection',
     'isModalEdit' => false,
+    'delete_booklet' => false,
     'routeEdit' => null,
     'routeView' => null,
     'isModalRole' => false,
@@ -54,6 +55,7 @@
                 :edit_permission="$edit_permission"
                 :showModal="$showModal"
                 :isModalView="$isModalView"
+                :delete_booklet="$delete_booklet"
             />
         </table>
     </div>

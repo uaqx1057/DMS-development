@@ -152,4 +152,26 @@ protected $fillable = [
     {
         return $this->hasMany(DriverBusinessId::class);
     }
+    public function driverReceipts()
+    {
+        return $this->hasMany(\App\Models\DriverReceipt::class, 'driver_id');
+    }
+
+    public function driverDifferences()
+    {
+        return $this->hasMany(\App\Models\DriverDifference::class, 'driver_id');
+    }
+
+    public function coordinatorReportFieldValues()
+    {
+        return $this->hasManyThrough(
+            \App\Models\CoordinatorReportFieldValue::class,
+            \App\Models\CoordinatorReport::class,
+            'driver_id',
+            'coordinator_report_id',
+            'id',
+            'id'
+        );
+    }
+
 }
