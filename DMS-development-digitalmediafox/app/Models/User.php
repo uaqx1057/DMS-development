@@ -63,7 +63,8 @@ class User extends Authenticatable
         return $this->belongsTo(Branch::class);
     }
 
-    public function scopeSearch($query, $value){
+    public function scopeSearch($query, $value)
+    {
         $query->where("name", "like", "%{$value}%");
     }
 
@@ -75,5 +76,20 @@ class User extends Authenticatable
     public function designation()
     {
         return $this->hasOne(Designation::class);
+    }
+
+    public function driverReceipts()
+    {
+        return $this->hasMany(DriverReceipt::class, 'user_id',  'id');
+    }
+
+    public function operationSuperviserDifference()
+    {
+        return $this->hasMany(OperationSuperviserDifference::class, 'superviser_id', 'id');
+    }
+
+    public function driverDifferences()
+    {
+        return $this->hasMany(DriverDifference::class, 'user_id', 'id');
     }
 }

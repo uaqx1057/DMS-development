@@ -4,6 +4,8 @@ namespace App\Livewire\DMS\Drivers;
 
 use App\Models\Booklet;
 use App\Models\BusinessId;
+use App\Models\CoordinatorReport;
+use App\Models\CoordinatorReportFieldValue;
 use App\Models\Driver;
 use App\Models\DriverReceipt;
 use App\Services\BusinessService;
@@ -20,7 +22,6 @@ class CreateReceipt extends Component
     public string $menu = 'Driver Receipt';
 
     public $driver;
-    public $driverId;
     public $driverExists = true;
 
     // Form fields
@@ -34,9 +35,8 @@ class CreateReceipt extends Component
     public $amount_received;
     public $max_receivable = 0;
 
-    public $businesses = [];
     public $businessValues = [];
-    public $assignBusinessIds = [];
+    public $assignBusiness = [];
 
     protected DriverService $driverService;
     protected BusinessService $businessService;
@@ -47,10 +47,21 @@ class CreateReceipt extends Component
         $this->businessService = $businessService;
     }
 
-    public function mount($id)
+    public function updatedAmountReceived($value)
     {
-        $this->driverId = $id;
-        $this->driver = $this->driverService->find($id);
+        if ($this->max_receivable > 0 && $value > $this->max_receivable) {
+            $this->amount_received = $this->max_receivable;
+            $this->addError('amount_received', 'Amount cannot be more than ' . $this->max_receivable);
+            return;
+        }
+        $this->resetErrorBag('amount_received');
+    }
+
+    public function updatedDriverId($driverId)
+    {
+        $this->driverExists = true;
+
+        $this->driver = $this->driverService->find($driverId);
 
         if (!$this->driver) {
             $this->driverExists = false;
@@ -58,32 +69,32 @@ class CreateReceipt extends Component
             return;
         }
 
-        $this->businesses = $this->businessService->all();
-        $this->driver_id = $id;
-        $total_receipts = \App\Models\DriverReceipt::where('driver_id', $this->driver_id)->sum('amount_received');
+        $this->driver_id = $driverId;
 
-        $driver_coordinate_reports_ids = \App\Models\CoordinatorReport::where('driver_id', $this->driver_id)
-            ->pluck('id')
-            ->toArray();
+        // RESET dependent dropdowns
+        $this->business_id = null;
+        $this->business_id_value = null;
+        $this->businessValues = [];
 
-        $cash_collected = \App\Models\CoordinatorReportFieldValue::whereIn('coordinator_report_id', $driver_coordinate_reports_ids)
+        // Receipt calculations
+        $total_receipts = DriverReceipt::where('driver_id', $driverId)->sum('amount_received');
+
+        $reportIDs = CoordinatorReport::where('driver_id', $driverId)->pluck('id');
+
+        $cash_collected = CoordinatorReportFieldValue::whereIn('coordinator_report_id', $reportIDs)
             ->where('field_id', 7)
             ->sum('value');
 
         $this->max_receivable = $cash_collected - $total_receipts;
 
+        // Fetch assigned businesses
+        $this->assignBusiness = DB::table('business_driver')
+            ->where('driver_id', $driverId)
+            ->pluck('business_id')
+            ->unique()
+            ->values()
+            ->toArray();
     }
-    public function updatedAmountReceived($value)
-    {
-        if ($this->max_receivable > 0 && $value > $this->max_receivable) {
-            $this->amount_received = $this->max_receivable;      
-            $this->addError('amount_received', 'Amount cannot be more than ' . $this->max_receivable);
-            return;
-        }
-        // If amount is valid → remove the validation error
-        $this->resetErrorBag('amount_received');
-    }
-
 
     public function updatedBusinessId($businessId)
     {
@@ -93,25 +104,18 @@ class CreateReceipt extends Component
             return;
         }
 
-        // Get all IDs for the selected business
-        $allBusinessValues = BusinessId::where('business_id', $businessId)->get();
+        $allIDs = BusinessId::where('business_id', $businessId)->get();
 
-        // Get IDs assigned to this driver for this business
-        $assignedIds = DB::table('driver_business_ids')
+        $assignedIDs = DB::table('driver_business_ids')
             ->where('driver_id', $this->driver_id)
             ->whereNull('transferred_at')
             ->pluck('business_id_id')
             ->toArray();
 
-        // Filter only assigned IDs for this business
-        $this->businessValues = $allBusinessValues->filter(function ($item) use ($assignedIds) {
-            return in_array($item->id, $assignedIds);
-        })->values();
-
-        $this->business_id_value = null; // reset selection
+        // Only show IDs assigned to this driver
+        $this->businessValues = $allIDs->whereIn('id', $assignedIDs)->values();
+        $this->business_id_value = null;
     }
-
-
 
     public function save()
     {
@@ -126,24 +130,28 @@ class CreateReceipt extends Component
             'amount_received' => 'required|numeric|min:1',
         ]);
 
-        // Check if this supervisor already created a booklet today
-        $existDriverReceipt = DriverReceipt::where('driver_id', $this->driver_id)
+        // Prevent duplicate receipts for same date
+        $exist = DriverReceipt::where('driver_id', $this->driver_id)
             ->where('receipt_date', $this->receipt_date)
             ->exists();
 
-        if ($existDriverReceipt) {
-            $this->addError('receipt_date', 'This Driver has already created receipt this date.');
+        if ($exist) {
+            $this->addError('receipt_date', 'This driver has already created receipt on this date.');
             return;
         }
+        $driverData = Driver::where('id',$this->driver_id)->first();
 
-        $path = null;
         if ($this->receipt_image) {
-            $path = $this->receipt_image->store('receipts', 'public');
+            $filename = now()->format('Ymd_His') . '-' . $driverData->name . '-' . $driverData->iqaama_number . '.' . $this->receipt_image->getClientOriginalExtension();
+            $path = $this->receipt_image->storeAs('receipts', $filename, 'public');
+        } else {
+            $path = null;
         }
+
 
         DriverReceipt::create([
             'booklet_id' => $this->booklet_number,
-            'user_id' => auth()->user()->id,
+            'user_id' => auth()->id(),
             'reaceipt_no' => $this->reaceipt_no,
             'receipt_date' => $this->receipt_date,
             'receipt_image' => $path,
@@ -153,39 +161,28 @@ class CreateReceipt extends Component
             'amount_received' => $this->amount_received,
         ]);
 
-        // Driver::where('id', $this->driver_id)->update([
-        //     'total_receipt' => DB::raw('total_receipt + ' . $this->amount_received)
-        // ]);
-
         session()->flash('success', __('Receipt created successfully.'));
-        return redirect()->route('drivers.index');
+        return redirect()->route('driver-difference.index');
     }
 
     public function render()
     {
-        $main_menu = $this->main_menu;
-        $menu = $this->menu;
-        $driver = $this->driver;
-        $businesses = $this->businesses;
-
-        $booklets = Booklet::whereHas('user',function($query) {
-            $query->where('branch_id', auth()->user()->branch_id);
+        $drivers = Driver::when(auth()->user()->role_id != 1, function ($q) {
+            $q->where('branch_id', auth()->user()->branch_id);
         })->get();
 
-        $assignBusiness = DB::table('business_driver')
-            ->where('driver_id', $this->driver_id)
-            ->pluck('business_id')
-            ->unique()
-            ->values()
-            ->toArray();
+        $businesses = $this->businessService->all();
 
-        return view('livewire.dms.drivers.create-receipt', compact(
-            'main_menu',
-            'menu',
-            'driver',
-            'businesses',
-            'assignBusiness',
-            'booklets'
-        ));
+        $booklets = Booklet::when(auth()->user()->role_id != 1, function ($q) {
+            $q->whereHas('user', fn ($u) => $u->where('branch_id', auth()->user()->branch_id));
+        })->get();
+
+        return view('livewire.dms.drivers.create-receipt', [
+            'main_menu'   => $this->main_menu,
+            'menu'        => $this->menu,
+            'drivers'     => $drivers,
+            'businesses'  => $businesses,
+            'booklets'    => $booklets,
+        ]);
     }
 }

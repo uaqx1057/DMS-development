@@ -7,8 +7,13 @@ use App\Livewire\DMS\Booklet\CreateBooklet;
 use App\Livewire\DMS\Booklet\EditBooklet;
 use App\Livewire\DMS\DriverDifference\CreateDriverDifference;
 use App\Livewire\DMS\DriverDifference\DriverDifferenceList;
+use App\Livewire\DMS\DriverDifference\DriverDifferenceLog;
 use App\Livewire\DMS\Drivers\CreateReceipt;
 use App\Livewire\DMS\Drivers\DriverCoordinateReport;
+use App\Livewire\DMS\Drivers\ReceiptLog;
+use App\Livewire\DMS\OperationSuperviser\CreateOperationSuperviserDifference;
+use App\Livewire\DMS\OperationSuperviser\OperationSuperviserDifferenceList;
+use App\Livewire\DMS\OperationSuperviser\OperationSuperviserDifferenceLog;
 use App\Livewire\Employee\{CreateEmployee, EditEmployee, EmployeeList};
 use App\Livewire\DMS\DriverTypes\{CreateDriverType, DriverTypeList, EditDriverType};
 use App\Livewire\DMS\Drivers\{CreateDriver, DriverList, EditDriver, ShowDriver};
@@ -104,14 +109,30 @@ Route::get('/orders', OrderDetails::class)->name('orders.index');
 
             Route::get('/view/{id}', DriverCoordinateReport::class)->name('view')->middleware('permission:' . config('const.DRIVERS') . ',' . config('const.VIEW'));
 
-            Route::get('/create-receipt/{id}', CreateReceipt::class)->name('create-receipt');
         });
 
+        // Driver Receipt Routes
+        Route::prefix('driver-receipt')->as('driver-receipt.')->group(function () {
+            Route::get('/create', CreateReceipt::class)->name('create')->middleware('permission:' . config('const.ADDRECEIPT') . ',' . config('const.ADD'));
+            Route::get('/log', ReceiptLog::class)->name('log')->middleware('permission:' . config('const.RECEIPTlOG') . ',' . config('const.VIEW'));
+        });
+        // Driver Difference
         Route::prefix('driver-difference')->as('driver-difference.')->group(function () {
             Route::get('/', DriverDifferenceList::class)->name('index')->middleware('permission:' . config('const.DRIVERDIFFERENCE') . ',' . config('const.VIEW'));
             Route::get('/create', CreateDriverDifference::class)->name('create')->middleware('permission:' . config('const.DRIVERDIFFERENCE') . ',' . config('const.ADD'));
+
+            Route::get('/log', DriverDifferenceLog::class)->name('log')->middleware('permission:' . config('const.DRIVERDIFFERENCELOG') . ',' . config('const.VIEW'));
         });
 
+        // Operation superviser difference 
+        Route::prefix('superviser-difference')->as('superviser-difference.')->group(function () {
+            Route::get('/', OperationSuperviserDifferenceList::class)->name('index')->middleware('permission:' . config('const.OPERATIONSUPERVISERDIFFERENCE') . ',' . config('const.VIEW'));
+            Route::get('/create', CreateOperationSuperviserDifference::class)->name('create')->middleware('permission:' . config('const.OPERATIONSUPERVISERDIFFERENCE') . ',' . config('const.ADD'));
+
+            Route::get('/log', OperationSuperviserDifferenceLog::class)->name('log')->middleware('permission:' . config('const.OPERATIONSUPERVISERDIFFERENCELOG') . ',' . config('const.VIEW'));
+        });
+
+        // Booklet Routes
         Route::prefix('booklet')->as('booklet.')->group(function () {
             Route::get('/', BookletList::class)->name('index')->middleware('permission:' . config('const.BOOKLET') . ',' . config('const.VIEW'));
             Route::get('/create', CreateBooklet::class)->name('create')->middleware('permission:' . config('const.BOOKLET') . ',' . config('const.ADD'));

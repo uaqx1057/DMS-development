@@ -45,11 +45,13 @@ class CreateBooklet extends Component
         $main_menu = $this->main_menu;
         $menu = $this->menu;
 
-        $operationSupervisers = User::with('role')
-            ->whereHas('role', function ($query) {
-                $query->where('name', 'operation supervisor');
-            })
-            ->where('branch_id', auth()->user()->branch_id)->get();
+        $operationSupervisers = User::where('role_id', 8);
+        
+        if(auth()->user()->role_id != 1){
+            $operationSupervisers = $operationSupervisers->where('branch_id', auth()->user()->branch_id);
+        }
+        $operationSupervisers = $operationSupervisers->get();
+
         return view('livewire.dms.booklet.create-booklet', compact(
             'main_menu',
             'menu',

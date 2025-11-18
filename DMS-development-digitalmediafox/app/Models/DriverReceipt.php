@@ -24,4 +24,6 @@ class DriverReceipt extends Model
     public function driver() { return $this->belongsTo(Driver::class); }
     public function business() { return $this->belongsTo(Business::class); }
     public function businessValue() { return $this->belongsTo(BusinessId::class, 'business_id_value'); }
+
+    public function user() { return $this->belongsTo(User::class); }
 }

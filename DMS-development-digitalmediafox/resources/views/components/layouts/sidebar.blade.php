@@ -102,6 +102,8 @@
                 @endforeach
 
                 <!-- Custom Menus -->
+                @if (auth()->user()->role_id == 1)
+                    
                 <x-ui.sidebar.menu
                     :isCollapsed="false"
                     :dataId="999"
@@ -120,6 +122,7 @@
                     label="Fuel"
                     reload-page
                 />
+                
                 <x-ui.sidebar.menu
                     :isCollapsed="false"
                     :dataId="997"
@@ -129,6 +132,7 @@
                     label="Order"
                     reload-page
                 />
+                @endif
             </ul>
         </div>
     </div>

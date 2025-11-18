@@ -6,7 +6,7 @@
         <x-ui.col class="col-lg-12">
             <form wire:submit.prevent="save">
                 <x-ui.card>
-                    <x-ui.card-header title="Driver Difference" />
+                    <x-ui.card-header title="Supervisor Difference" />
                     <x-ui.card-body>
                         <x-ui.row>
 
@@ -14,14 +14,14 @@
 
                             <!-- Driver Receipts -->
                             <x-ui.col class="mb-3 col-lg-6 col-md-6">
-                                <x-form.label for="driver_receipt" name="Driver" :required="true" />
-                               <x-form.select id="driver_receipt" wire:model.live="driver_receipt">
-                                    <option value="">--select driver--</option>
-                                    @foreach ($drivers  as $driver)
-                                            <option value="{{ $driver->id }}">{{ $driver->name }}</option>
+                                <x-form.label for="superviser" name="Operation Superviser" :required="true" />
+                               <x-form.select id="superviser" wire:model.live="superviser">
+                                    <option value="">--select operation supervisor--</option>
+                                    @foreach ($supervisers  as $superviser)
+                                            <option value="{{ $superviser->id }}">{{ $superviser->name }}</option>
                                     @endforeach
                                 </x-form.select>
-                                <x-ui.alert error="driver_receipt" />
+                                <x-ui.alert error="superviser" />
                             </x-ui.col>
 
                             <!-- Total Receipt or Difference -->
@@ -48,12 +48,34 @@
                                 <x-ui.alert error="total_remaining" />
                             </x-ui.col>
 
+                            <!-- Receipt Image -->
+                            <x-ui.col class="mb-3 col-lg-6 col-md-6">
+                                <x-form.label name="Receipt Image" :required="true" />
+                                <x-form.input-file wire:model="receipt_image" accept="image/*" />
+                                <x-ui.alert error="receipt_image" />
+                            </x-ui.col>
+
+                            <!-- Image Preview -->
+                            <x-ui.col class="mb-3 col-lg-6 col-md-6 d-flex justify-content-center align-items-center">
+                                <div wire:loading wire:target="receipt_image">
+                                    <div class="spinner-border text-primary"></div>
+                                    <div class="mt-2 text-primary fw-semibold">Loading...</div>
+                                </div>
+
+                                <div wire:loading.remove wire:target="receipt_image">
+                                    @if ($receipt_image)
+                                        <img src="{{ $receipt_image->temporaryUrl() }}" width="100" height="100"
+                                             style="object-fit: cover;">
+                                    @endif
+                                </div>
+                            </x-ui.col>
+
                         </x-ui.row>
                     </x-ui.card-body>
                 </x-ui.card>
 
                 <div class="mb-4 text-end">
-                    <a href="{{ route('driver-difference.index') }}" wire:navigate
+                    <a href="{{ route('superviser-difference.index') }}" wire:navigate
                         class="btn btn-danger w-sm">@translate('Cancel')</a>
                     <button type="submit" class="btn btn-success w-sm" wire:loading.attr="disabled">
                         <span wire:loading.remove wire:target="save">

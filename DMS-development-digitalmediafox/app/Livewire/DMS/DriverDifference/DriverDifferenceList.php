@@ -44,6 +44,10 @@ class DriverDifferenceList extends Component
 
         $drivers = Driver::query()
 
+            /** 🔥 Branch filter only for NON-admin users */
+            ->when(auth()->user()->role_id != 1, function ($q) {
+                $q->where('branch_id', auth()->user()->branch_id);
+            })
             /** ✅ Load cash collected (field_id = 7) */
             ->withSum(['coordinatorReportFieldValues as cash_collected_by_driver' => function ($q) {
                 $q->where('field_id', 7);

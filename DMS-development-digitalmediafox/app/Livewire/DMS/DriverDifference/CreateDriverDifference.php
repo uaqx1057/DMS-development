@@ -26,30 +26,34 @@ class CreateDriverDifference extends Component
     public function updatedDriverReceipt($dirverID)
     {
         if ($dirverID) {
-            $driverDifference = DriverDifference::where('driver_id', $dirverID)->orderBy('id', 'desc')->first();
-            if($driverDifference){
-                $this->total_receipt = $driverDifference->total_remaining;
-            } else{
 
-                $total_driver_receipt = DriverReceipt::where('driver_id', $dirverID)->sum('amount_received');
-                $driver_coordinate_reports_ids = CoordinatorReport::where('driver_id', $dirverID)->pluck('id')->unique()->toArray();
-    
-                // get from coordinator_report_field_values Table 
-                $cash_collected_by_driver = CoordinatorReportFieldValue::whereIn('coordinator_report_id', $driver_coordinate_reports_ids)->where('field_id', 7)->sum('value');
-    
-                logger($cash_collected_by_driver);
-                
-                $this->total_receipt = $cash_collected_by_driver - $total_driver_receipt;
-            }
-        
+            $already_paid = DriverDifference::where('driver_id', $dirverID)->sum('total_paid');
+
+            $total_driver_receipt = DriverReceipt::where('driver_id', $dirverID)->sum('amount_received');
+            $driver_coordinate_reports_ids = CoordinatorReport::where('driver_id', $dirverID)->pluck('id')->unique()->toArray();
+
+            // get from coordinator_report_field_values Table 
+            $cash_collected_by_driver = CoordinatorReportFieldValue::whereIn('coordinator_report_id', $driver_coordinate_reports_ids)->where('field_id', 7)->sum('value');
+
+            $already_paid = $already_paid ?? 0;
+            $cash_collected_by_driver = $cash_collected_by_driver ?? 0;
+            $total_driver_receipt = $total_driver_receipt ?? 0;
+
+
+            // logger($cash_collected_by_driver);
+
+            $this->total_receipt = $cash_collected_by_driver - $total_driver_receipt + $already_paid;
+            
+
         } else {
             $this->total_receipt = 0;
         }
     }
-    
+
 
     public function updatedTotalPaid($value)
     {
+         $value = $value === '' ? 0 : $value;
         // If no driver selected yet
         if (!$this->total_receipt) {
             $this->total_paid = 0;
@@ -78,8 +82,29 @@ class CreateDriverDifference extends Component
 
     public function render()
     {
-        $receipt_driver_ids = DriverReceipt::pluck('driver_id')->unique()->toArray();
-        
+        $receipt_driver_ids = Driver::query()
+
+            /** 🔥 Branch filter only for NON-admin users */
+            ->when(auth()->user()->role_id != 1, function ($q) {
+                $q->where('branch_id', auth()->user()->branch_id);
+            })
+            /** ✅ Load cash collected (field_id = 7) */
+            ->withSum(['coordinatorReportFieldValues as cash_collected_by_driver' => function ($q) {
+                $q->where('field_id', 7);
+            }], 'value')
+
+            /** ✅ Load amount_received from driver_receipts */
+            ->withSum('driverReceipts as total_driver_receipts', 'amount_received')
+
+            /** ✅ Load total_paid from driver_differences */
+            ->withSum('driverDifferences as driver_diff_paid', 'total_paid')
+
+            ->whereHas('coordinatorReportFieldValues', function ($q) {
+                $q->where('field_id', 7);
+            })->pluck('id')
+            ->unique()
+            ->toArray();
+
         $main_menu = $this->main_menu;
         $menu = $this->menu;
 
@@ -95,10 +120,10 @@ class CreateDriverDifference extends Component
     {
         // Validate required fields
         $this->validate([
-            'driver_receipt'   => 'required|exists:drivers,id',
-            'total_receipt'    => 'required|numeric|min:0',
-            'total_paid'       => 'required|numeric|min:0|max:' . $this->total_receipt,
-            'total_remaining'  => 'required|numeric|min:0',
+            'driver_receipt' => 'required|exists:drivers,id',
+            'total_receipt' => 'required|numeric|min:0',
+            'total_paid' => 'required|numeric|min:0|max:' . $this->total_receipt,
+            'total_remaining' => 'required|numeric|min:0',
         ]);
 
 
@@ -115,5 +140,5 @@ class CreateDriverDifference extends Component
         return redirect()->route('driver-difference.index');
     }
 
-    
+
 }

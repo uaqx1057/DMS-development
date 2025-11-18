@@ -41,16 +41,25 @@ class BookletList extends Component
             ['label' => 'Operation Superviser', 'column' => 'user', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'name'],
             ['label' => 'Action', 'column' => 'action', 'isData' => false, 'hasRelation' => false],
         ];
+
+        
        $booklets = Booklet::with('user')
-        ->whereHas('user', function ($q) {
-            $q->where('branch_id', auth()->user()->branch_id);
+
+        // 🔥 Filter branch only when role is NOT admin
+        ->when(auth()->user()->role_id != 1, function ($q) {
+            $q->whereHas('user', function ($q2) {
+                $q2->where('branch_id', auth()->user()->branch_id);
+            });
         })
+
+        // 🔍 Search Filter
         ->where(function ($query) {
             $query->where('booklet_number', 'like', "%{$this->search}%")
-                ->orWhereHas('user', function ($q2) {
-                        $q2->where('name', 'like', "%{$this->search}%");
-                });
+                  ->orWhereHas('user', function ($q2) {
+                      $q2->where('name', 'like', "%{$this->search}%");
+                  });
         })
+
         ->orderBy($this->sortColumn, $this->sortDirection)
         ->paginate($this->perPage);
 

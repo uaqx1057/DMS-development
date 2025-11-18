@@ -17,6 +17,11 @@
                 {{-- For Platform IDs Report - pass business_id_value --}}
                 <a href="{{ Storage::url('app/public/' . $item->penalty_file) }}" target="_blank" class="btn btn-sm btn-primary">View Proof</a>
             @endif
+        @elseif ($column['column'] == 'receipt_image')
+            @if(isset($item->receipt_image))
+                {{-- For Platform IDs Report - pass business_id_value --}}
+                <a href="{{ Storage::url('app/public/' . $item->receipt_image) }}" target="_blank" class="btn btn-sm btn-primary">View</a>
+            @endif
         @elseif ($column['column'] === 'view')
             @if(isset($item->business_id_value))
                 {{-- For Platform IDs Report - pass business_id_value --}}
@@ -69,15 +74,6 @@
                                 </li>
                             @endif
                         @endif
-                        @if (auth()->user()->role->name == 'operation supervisor' || auth()->user()->role->name == 'cashier')
-                            <li>
-                                <a href="{{ route('drivers.create-receipt', $item['id']) }}" wire:navigate class="dropdown-item edit-item-btn">
-                                    <i class="align-bottom ri-add-line me-2 text-muted"></i>
-                                    @translate('Add Receipt')
-                                </a>
-                            </li>
-                        @endif
-
 
                         @if ($delete_booklet)
                             <button class="dropdown-item edit-item-btn"

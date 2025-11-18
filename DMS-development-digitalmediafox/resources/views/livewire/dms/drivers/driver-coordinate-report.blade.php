@@ -98,6 +98,7 @@
 
         </div>
     </div>
+    @if (auth()->user()->role_id == 1)
     <div>
         <!-- Import Modal -->
         <div wire:ignore.self class="modal fade" id="importModal" tabindex="-1" x-data="{ uploading: false }"
@@ -367,5 +368,5 @@
         @endpush
 
     </div>
-
+    @endif
 </div>
