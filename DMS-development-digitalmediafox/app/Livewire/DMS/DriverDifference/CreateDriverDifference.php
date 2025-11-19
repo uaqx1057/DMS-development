@@ -23,6 +23,9 @@ class CreateDriverDifference extends Component
     public $total_paid;
     public $total_remaining;
 
+    public $receipt_date;
+    public $receipt_image;
+
     public function updatedDriverReceipt($dirverID)
     {
         if ($dirverID) {
@@ -40,7 +43,7 @@ class CreateDriverDifference extends Component
             $total_driver_receipt = $total_driver_receipt ?? 0;
 
 
-            // logger($cash_collected_by_driver);
+            logger($cash_collected_by_driver);
 
             $this->total_receipt = $cash_collected_by_driver - $total_driver_receipt + $already_paid;
             
@@ -124,7 +127,18 @@ class CreateDriverDifference extends Component
             'total_receipt' => 'required|numeric|min:0',
             'total_paid' => 'required|numeric|min:0|max:' . $this->total_receipt,
             'total_remaining' => 'required|numeric|min:0',
+            'receipt_date' => 'required|date|before_or_equal:today',
+            'receipt_image' => 'required|image',
         ]);
+
+        $driverData = Driver::where('id',$this->driver_receipt)->first();
+
+        if ($this->receipt_image) {
+            $filename = now()->format('Ymd_His') . '-' . $driverData->name . '-' . $driverData->iqaama_number . '.' . $this->receipt_image->getClientOriginalExtension();
+            $path = $this->receipt_image->storeAs('receipts', $filename, 'public');
+        } else {
+            $path = null;
+        }
 
 
         // Optional: Save difference as a separate table entry
@@ -134,6 +148,8 @@ class CreateDriverDifference extends Component
             'total_receipt' => $this->total_receipt,
             'total_paid' => $this->total_paid,
             'total_remaining' => $this->total_remaining,
+            'receipt_date' => $this->receipt_date,
+            'receipt_image' => $path,
         ]);
 
         session()->flash('success', __('Driver Difference created successfully.'));

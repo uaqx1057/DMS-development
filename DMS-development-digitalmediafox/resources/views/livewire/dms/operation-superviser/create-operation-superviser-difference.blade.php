@@ -13,7 +13,7 @@
                             
 
                             <!-- Driver Receipts -->
-                            <x-ui.col class="mb-3 col-lg-6 col-md-6">
+                            <x-ui.col class="mb-3 col-lg-4 col-md-6">
                                 <x-form.label for="superviser" name="Operation Superviser" :required="true" />
                                <x-form.select id="superviser" wire:model.live="superviser">
                                     <option value="">--select operation supervisor--</option>
@@ -25,7 +25,7 @@
                             </x-ui.col>
 
                             <!-- Total Receipt or Difference -->
-                            <x-ui.col class="mb-3 col-lg-6 col-md-6">
+                            <x-ui.col class="mb-3 col-lg-4 col-md-6">
                                 <x-form.label for="total_receipt" name="Total Receipt" :required="false" />
                                 <x-form.input-text class="bg-light" readonly id="total_receipt" type="number" :placeholder="@translate('')"
                                     wire:model="total_receipt"/>
@@ -33,7 +33,7 @@
                             </x-ui.col>
 
                             <!-- Total Paid -->
-                            <x-ui.col class="mb-3 col-lg-6 col-md-6">
+                            <x-ui.col class="mb-3 col-lg-4 col-md-6">
                                 <x-form.label for="total_paid" name="Total Paid" :required="true" />
                                 <x-form.input-text id="total_paid" type="number" max="{{ $total_receipt }}" :placeholder="@translate('Enter Amount')"
                                     wire:model.live="total_paid" />
@@ -41,15 +41,22 @@
                             </x-ui.col>
 
                             <!-- Total Remaining -->
-                            <x-ui.col class="mb-3 col-lg-6 col-md-6">
+                            <x-ui.col class="mb-3 col-lg-4 col-md-6">
                                 <x-form.label for="total_remaining" name="Total Remaining" :required="false" />
                                 <x-form.input-text class="bg-light" readonly id="total_remaining" type="number" :placeholder="@translate('')"
                                     wire:model="total_remaining" />
                                 <x-ui.alert error="total_remaining" />
                             </x-ui.col>
 
+                            <!-- Date -->
+                            <x-ui.col class="mb-3 col-lg-4 col-md-6">
+                                <x-form.label for="receipt_date" name="Receipt Date" :required="true" />
+                                <x-form.input-date id="receipt_date" wire:model="receipt_date" max="{{ now()->toDateString() }}" />
+                                <x-ui.alert error="receipt_date" />
+                            </x-ui.col>
+
                             <!-- Receipt Image -->
-                            <x-ui.col class="mb-3 col-lg-6 col-md-6">
+                            <x-ui.col class="mb-3 col-lg-4 col-md-6">
                                 <x-form.label name="Receipt Image" :required="true" />
                                 <x-form.input-file wire:model="receipt_image" accept="image/*" />
                                 <x-ui.alert error="receipt_image" />

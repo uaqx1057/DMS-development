@@ -151,3 +151,8 @@ function getLatestDriverId()
 
     return $newId;
 }
+
+function accessModule($Id)
+{
+    return Privilege::where(['module_id' => $Id, 'role_id' => auth()->user()->role_id])->first();
+}

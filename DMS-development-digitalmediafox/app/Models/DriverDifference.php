@@ -12,6 +12,8 @@ class DriverDifference extends Model
         'total_receipt',
         'total_paid',
         'total_remaining',
+        'receipt_date',
+        'receipt_image',
     ];
 
     public function driver() { return $this->belongsTo(Driver::class); }

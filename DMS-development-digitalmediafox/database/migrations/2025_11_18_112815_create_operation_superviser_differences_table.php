@@ -19,6 +19,7 @@ return new class extends Migration
             $table->decimal('total_paid', 10, 2)->default(0);
             $table->decimal('total_remaining', 10, 2)->default(0);
             $table->string('receipt_image')->nullable();
+            $table->date('receipt_date');
             $table->timestamps();
         });
     }

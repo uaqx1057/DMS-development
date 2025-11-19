@@ -13,6 +13,7 @@ class OperationSuperviserDifference extends Model
         'total_paid',
         'total_remaining',
         'receipt_image',
+        'receipt_date',
     ];
 
     public function superviser()

@@ -38,9 +38,11 @@ class DriverDifferenceLog extends Component
             ['label' => 'Driver Name', 'column' => 'driver', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'name'],
             ['label' => 'Iqaama Number', 'column' => 'driver', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'iqaama_number'],
             ['label' => 'Created By', 'column' => 'user', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'name'],
+            ['label' => 'Receipt Date', 'column' => 'receipt_date', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Total Difference', 'column' => 'total_receipt', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Total Paid', 'column' => 'total_paid', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Total Remaining', 'column' => 'total_remaining', 'isData' => true, 'hasRelation' => false],
+            ['label' => 'Receipt Image', 'column' => 'receipt_image', 'isData' => false, 'hasRelation' => false],
             ['label' => 'Created At', 'column' => 'created_at', 'isData' => true, 'hasRelation' => false],
         ];
 

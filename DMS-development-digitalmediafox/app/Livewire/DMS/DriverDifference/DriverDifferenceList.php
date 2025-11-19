@@ -76,18 +76,18 @@ class DriverDifferenceList extends Component
         /** Final Calculations */
         $drivers->getCollection()->transform(function ($driver) {
 
-            $collected = $driver->cash_collected_by_driver ?? 0;
-            $receipts = $driver->total_driver_receipts ?? 0;
-            $driver_paid = $driver->driver_diff_paid ?? 0;
+            $collected = number_format($driver->cash_collected_by_driver, 2, '.', '') ?? 0;
+            $receipts = number_format($driver->total_driver_receipts, 2, '.', '') ?? 0;
+            $driver_paid = number_format($driver->driver_diff_paid, 2, '.', '') ?? 0;
 
             /** Driver still has this pending */
-            $driver->total_receipt = $collected - $receipts;
+            $driver->total_receipt = $collected;
 
             /** PAID = driver_difference.total_paid + driver_receipts.amount_received */
-            $driver->total_paid = $driver_paid + $receipts;
+            $driver->total_paid = number_format($driver_paid + $receipts, 2, '.', '') ?? 0;
 
             /** remaining = total_receipt - total_paid */
-            $driver->total_remaining = $driver->total_receipt - $driver->total_paid;
+            $driver->total_remaining = number_format($driver->total_receipt - $driver->total_paid, 2, '.', '') ?? 0;
 
             return $driver;
         });

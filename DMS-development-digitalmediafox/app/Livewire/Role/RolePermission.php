@@ -39,10 +39,24 @@ class RolePermission extends Component
             ->orderBy('index', 'asc')
             ->get();
     }
+    public function getSubModules()
+    {
+        return Module::with(['operations' => function ($query) {
+                $query->orderBy('index', 'asc');
+            }])
+            ->whereNull('route')
+            ->orderBy('index', 'asc')
+            ->get();
+    }
 
     private function loadPermissions()
     {
-        $this->modules = $this->getModules();
+        // Correct function calls
+        $allmodules = $this->getModules();
+        $allSubmodules = $this->getSubModules();
+
+        // Merge collections
+        $this->modules = $allmodules->merge($allSubmodules);
 
         $this->viewPermissions = [];
         $this->addPermissions = [];

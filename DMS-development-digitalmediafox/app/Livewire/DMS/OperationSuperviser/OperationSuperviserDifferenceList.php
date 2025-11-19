@@ -76,10 +76,10 @@ class OperationSuperviserDifferenceList extends Component
             $superviser->total_driver_difference = $superviser->total_driver_difference ?? 0;
             $superviser->total_driver_receipts = $superviser->total_driver_receipts ?? 0;
 
-            $superviser->total_receipt = $superviser->total_driver_receipts + $superviser->total_driver_difference;
+            $superviser->total_receipt = number_format($superviser->total_driver_receipts + $superviser->total_driver_difference, 2, '.', '');
 
-            $superviser->total_paid = $superviser->driver_diff_paid ?? 0;
-            $superviser->total_remaining = $superviser->total_receipt - $superviser->total_paid;
+            $superviser->total_paid = number_format($superviser->driver_diff_paid, 2, '.', '') ?? 0;
+            $superviser->total_remaining = number_format($superviser->total_receipt - $superviser->total_paid, 2, '.', '');
             return $superviser;
         });
 

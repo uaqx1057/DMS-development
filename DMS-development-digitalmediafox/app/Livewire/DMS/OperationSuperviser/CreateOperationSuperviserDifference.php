@@ -20,6 +20,7 @@ class CreateOperationSuperviserDifference extends Component
     public $user_id;
     public $total_receipt;
 
+    public $receipt_date;
     public $receipt_image;
     public $total_paid;
     public $total_remaining;
@@ -118,6 +119,7 @@ class CreateOperationSuperviserDifference extends Component
             'total_paid' => 'required|numeric|min:0|max:' . $this->total_receipt,
             'total_remaining' => 'required|numeric|min:0',
             'receipt_image' => 'required|image',
+            'receipt_date' => 'required|date|before_or_equal:today',
         ]);
 
         $superviserData = User::where('id',$this->superviser)->first();
@@ -137,6 +139,7 @@ class CreateOperationSuperviserDifference extends Component
             'total_receipt' => $this->total_receipt,
             'total_paid' => $this->total_paid,
             'total_remaining' => $this->total_remaining,
+            'receipt_date' => $this->receipt_date,
             'receipt_image' => $path,
         ]);
 

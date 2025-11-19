@@ -1,32 +1,16 @@
 
-@props(['route' => null, 'label'])
+@props(['route' => null, 'label', 'moduleId'])
 
 @php
     $isActive = $route && request()->routeIs($route);
+    $accessModule = accessModule($moduleId);
 @endphp
-@if ($label == 'Penalty Logs' || $label == 'Import CSV Logs' || $label == 'Report Logs')
-    @if (auth()->user()->role_id == 1)
-        <li class="nav-item">
-            <a href="{{ $route ? route($route) : '#' }}"
-            class="nav-link {{ $isActive ? 'active' : '' }}">
-                <span>{{ $label }}</span>
-            </a>
-        </li>
-    @endif
-@elseif ($label == 'Operation Supervisor Difference Logs')
-  @if (auth()->user()->role_id == 1 || auth()->user()->role->name=="cashier")
-        <li class="nav-item">
-            <a href="{{ $route ? route($route) : '#' }}"
-            class="nav-link {{ $isActive ? 'active' : '' }}">
-                <span>{{ $label }}</span>
-            </a>
-        </li>
-    @endif
-@else
+
+@if(isset($accessModule) && $accessModule->is_view == 1)
     <li class="nav-item">
         <a href="{{ $route ? route($route) : '#' }}"
         class="nav-link {{ $isActive ? 'active' : '' }}">
-            <span>{{ $label }}</span>
+            <span>{{ $label}}</span>
         </a>
     </li>
 @endif

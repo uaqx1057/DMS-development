@@ -80,6 +80,7 @@
                                                 @if (getModulePrivilege($subOperation->id) || getModulePrivilege($operation->id))
                                                     <x-ui.sidebar.menu-item
                                                         :label="$subOperation->name"
+                                                        :moduleId="$subOperation->id"
                                                         :route="$subOperation->route"
                                                         reload-page
                                                     />
@@ -90,6 +91,7 @@
                                         {{-- Regular menu item --}}
                                         <x-ui.sidebar.menu-item
                                             :label="$operation->name"
+                                            :moduleId="$operation->id"
                                             :route="$operation->route"
                                             reload-page
                                         />

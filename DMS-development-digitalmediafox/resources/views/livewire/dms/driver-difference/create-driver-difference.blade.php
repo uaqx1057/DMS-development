@@ -48,6 +48,35 @@
                                 <x-ui.alert error="total_remaining" />
                             </x-ui.col>
 
+                            <!-- Date -->
+                            <x-ui.col class="mb-3 col-lg-6 col-md-6">
+                                <x-form.label for="receipt_date" name="Receipt Date" :required="true" />
+                                <x-form.input-date id="receipt_date" wire:model="receipt_date" max="{{ now()->toDateString() }}" />
+                                <x-ui.alert error="receipt_date" />
+                            </x-ui.col>
+
+                            <!-- Receipt Image -->
+                            <x-ui.col class="mb-3 col-lg-6 col-md-6">
+                                <x-form.label name="Receipt Image" :required="true"/>
+                                <x-form.input-file wire:model="receipt_image" accept="image/*" />
+                                <x-ui.alert error="receipt_image" />
+                            </x-ui.col>
+
+                            <!-- Image Preview -->
+                            <x-ui.col class="mb-3 col-lg-6 col-md-6 d-flex justify-content-center align-items-center">
+                                <div wire:loading wire:target="receipt_image">
+                                    <div class="spinner-border text-primary"></div>
+                                    <div class="mt-2 text-primary fw-semibold">Loading...</div>
+                                </div>
+
+                                <div wire:loading.remove wire:target="receipt_image">
+                                    @if ($receipt_image)
+                                        <img src="{{ $receipt_image->temporaryUrl() }}" width="100" height="100"
+                                             style="object-fit: cover;">
+                                    @endif
+                                </div>
+                            </x-ui.col>
+
                         </x-ui.row>
                     </x-ui.card-body>
                 </x-ui.card>

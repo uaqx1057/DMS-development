@@ -36,6 +36,7 @@ class OperationSuperviserDifferenceLog extends Component
         $columns = [
             ['label' => 'Supervisor', 'column' => 'superviser', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'name'],
             ['label' => 'Created By', 'column' => 'creator', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'name'],
+            ['label' => 'Receipt Date', 'column' => 'receipt_date', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Total Difference', 'column' => 'total_receipt', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Total Paid', 'column' => 'total_paid', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Total Remaining', 'column' => 'total_remaining', 'isData' => true, 'hasRelation' => false],
