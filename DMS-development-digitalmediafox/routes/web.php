@@ -2,6 +2,8 @@
 
 use App\Livewire\Auth\Login;
 use App\Livewire\Dashboard;
+use App\Livewire\DMS\AmountTransfer\AmountTransferList;
+use App\Livewire\DMS\AmountTransfer\CreateAmountTransfer;
 use App\Livewire\DMS\Booklet\BookletList;
 use App\Livewire\DMS\Booklet\CreateBooklet;
 use App\Livewire\DMS\Booklet\EditBooklet;
@@ -11,6 +13,7 @@ use App\Livewire\DMS\DriverDifference\DriverDifferenceLog;
 use App\Livewire\DMS\Drivers\CreateReceipt;
 use App\Livewire\DMS\Drivers\DriverCoordinateReport;
 use App\Livewire\DMS\Drivers\ReceiptLog;
+use App\Livewire\DMS\FranchiseReport\FranchiseReportList;
 use App\Livewire\DMS\OperationSuperviser\CreateOperationSuperviserDifference;
 use App\Livewire\DMS\OperationSuperviser\OperationSuperviserDifferenceList;
 use App\Livewire\DMS\OperationSuperviser\OperationSuperviserDifferenceLog;
@@ -130,6 +133,17 @@ Route::get('/orders', OrderDetails::class)->name('orders.index');
             Route::get('/create', CreateOperationSuperviserDifference::class)->name('create')->middleware('permission:' . config('const.OPERATIONSUPERVISERDIFFERENCE') . ',' . config('const.ADD'));
 
             Route::get('/log', OperationSuperviserDifferenceLog::class)->name('log')->middleware('permission:' . config('const.OPERATIONSUPERVISERDIFFERENCELOG') . ',' . config('const.VIEW'));
+        });
+
+        // Amount Transfer 
+        Route::prefix('amount-transfer')->as('amount-transfer.')->group(function () {
+            Route::get('/', AmountTransferList::class)->name('index')->middleware('permission:' . config('const.AMOUNTTRANSFER') . ',' . config('const.VIEW'));
+            Route::get('/create', CreateAmountTransfer::class)->name('create')->middleware('permission:' . config('const.AMOUNTTRANSFER') . ',' . config('const.ADD'));
+        });
+
+        // Franchise Report 
+        Route::prefix('franchise-report')->as('franchise-report.')->group(function () {
+            Route::get('/', FranchiseReportList::class)->name('index')->middleware('permission:' . config('const.FRANCHIESREPORT') . ',' . config('const.VIEW'));
         });
 
         // Booklet Routes

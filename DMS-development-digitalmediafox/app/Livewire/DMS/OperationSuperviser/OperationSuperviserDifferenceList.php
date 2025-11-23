@@ -37,7 +37,7 @@ class OperationSuperviserDifferenceList extends Component
         $edit_permission = false;
 
         $columns = [
-            ['label' => 'Supvisor Name', 'column' => 'name', 'isData' => true, 'hasRelation' => false],
+            ['label' => 'Supervisor Name', 'column' => 'name', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Total Difference', 'column' => 'total_receipt', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Total Paid', 'column' => 'total_paid', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Total Remaining', 'column' => 'total_remaining', 'isData' => true, 'hasRelation' => false],
