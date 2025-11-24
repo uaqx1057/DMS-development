@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ReportMailController;
 use App\Livewire\Auth\Login;
 use App\Livewire\Dashboard;
 use App\Livewire\DMS\AmountTransfer\AmountTransferList;
@@ -251,6 +252,13 @@ Route::get('/forgot-password', Forgot::class)->name('admin.password.request');
 Route::post('forgot-password', [AdminForgotPasswordController::class, 'sendResetLinkEmail'])->name('admin.password.email');
 Route::get('/reset-password', Reset::class)->name('admin.password.reset');
 Route::post('reset-password', [Reset::class, 'reset'])->name('admin.password.update');
+
+
+//Reports Email
+Route::get('/daily-report-mail', [ReportMailController::class, 'dailyReports'])->name('daily.reports');
+Route::get('/weekly-report-mail', [ReportMailController::class, 'weeklyReports'])->name('weekly.reports');
+Route::get('/monthly-report-mail', [ReportMailController::class, 'monthlyReports'])->name('monthly.reports');
+
 
 
 
