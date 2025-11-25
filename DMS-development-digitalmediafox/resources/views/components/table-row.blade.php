@@ -12,7 +12,16 @@
         @if ($column['isData'])
        {!! $this->customFormat($column, $column['hasRelation'] ? data_get($item, $column['column'].'.'.$column['columnRelation']) : data_get($item, $column['column'])) !!}
 
-       @elseif ($column['column'] == 'penalty_file')
+       @elseif ($column['column'] == 'file_name')
+            @if(isset($item->file_name))
+                {{-- Encode the full path including directory --}}
+                <a href="{{ route('download.file', ['path' => base64_encode($item->file_name)]) }}" 
+                target="_blank" 
+                class="">
+                    {{ $item->original_name }}
+                </a>
+            @endif
+        @elseif ($column['column'] == 'penalty_file')
             @if(isset($item->penalty_file))
                 {{-- For Platform IDs Report - pass business_id_value --}}
                 <a href="{{ Storage::url('app/public/' . $item->penalty_file) }}" target="_blank" class="btn btn-sm btn-primary">View Proof</a>

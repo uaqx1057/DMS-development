@@ -152,6 +152,8 @@ class CoordinatorReportRepository implements CoordinatorReportInterface
 
   
     public function create($data){
+
+
         // Create Coordinator Report
         if (!isset($data['branch_id']) && isset($data['driver_id'])) {
             $driver = \App\Models\Driver::find($data['driver_id']);
@@ -189,6 +191,18 @@ class CoordinatorReportRepository implements CoordinatorReportInterface
                                     'field_id' => $field->id,
                                     'value' => $value
                                 ]);
+                                if($field->id == 14){
+                                    $report->penalty_fields()->create([
+                                        'driver_id' => $report->driver_id,
+                                        'business_id' => $businessId->business_id, // Business type ID
+                                        'business_id_value' => $businessIdValue, // Specific business ID (business_ids.id)
+                                        'penalty_date' => $report->report_date,
+                                        'penalty_value' => $value,
+                                        'is_from_coordinate' => 1,
+                                    ]);
+                                }
+                                
+
                                 
                                 \Log::info("Stored field for business_id_value: {$businessIdValue}", [
                                     'business_type_id' => $businessId->business_id,
@@ -213,6 +227,17 @@ class CoordinatorReportRepository implements CoordinatorReportInterface
                                         'field_id' => $field->id,
                                         'value' => json_encode($uploadedFilePaths)
                                     ]);
+
+                                    if($field->id == 14){
+                                        $report->penalty_fields()->create([
+                                            'driver_id' => $report->driver_id,
+                                            'business_id' => $businessId->business_id, // Business type ID
+                                            'business_id_value' => $businessIdValue, // Specific business ID (business_ids.id)
+                                            'penalty_date' => $report->report_date,
+                                            'penalty_value' => json_encode($uploadedFilePaths),
+                                            'is_from_coordinate' => 1,
+                                        ]);
+                                    }
                                     
                                     \Log::info("Stored document field for business_id_value: {$businessIdValue}", [
                                         'business_type_id' => $businessId->business_id,
@@ -302,6 +327,17 @@ class CoordinatorReportRepository implements CoordinatorReportInterface
                                     'field_id' => $field->id,
                                     'value' => $value
                                 ]);
+
+                                // if($field->id == 14){
+                                //     $report->penalty_fields()->create([
+                                //         'driver_id' => $report->driver_id,
+                                //         'business_id' => $businessId->business_id, // Business type ID
+                                //         'business_id_value' => $businessIdValue, // Specific business ID (business_ids.id)
+                                //         'penalty_date' => $report->report_date,
+                                //         'penalty_value' => $value,
+                                //         'is_from_coordinate' => 1,
+                                //     ]);
+                                // }
                             } else {
                                 // Handle document field (multi-file upload)
                                 if (isset($data['files'][$businessIdValue][$fieldName]) && is_array($data['files'][$businessIdValue][$fieldName])) {
@@ -318,6 +354,17 @@ class CoordinatorReportRepository implements CoordinatorReportInterface
                                         'field_id' => $field->id,
                                         'value' => json_encode($uploadedFilePaths)
                                     ]);
+
+                                    // if($field->id == 14){
+                                    //     $report->penalty_fields()->create([
+                                    //         'driver_id' => $report->driver_id,
+                                    //         'business_id' => $businessId->business_id, // Business type ID
+                                    //         'business_id_value' => $businessIdValue, // Specific business ID (business_ids.id)
+                                    //         'penalty_date' => $report->report_date,
+                                    //         'penalty_value' => json_encode($uploadedFilePaths),
+                                    //         'is_from_coordinate' => 1,
+                                    //     ]);
+                                    // }
                                 } else {
                                     // If no new files uploaded, keep the existing value
                                     $report->report_fields()->create([
@@ -326,6 +373,17 @@ class CoordinatorReportRepository implements CoordinatorReportInterface
                                         'field_id' => $field->id,
                                         'value' => $value // This should be the existing file paths
                                     ]);
+
+                                    // if($field->id == 14){
+                                    //     $report->penalty_fields()->create([
+                                    //         'driver_id' => $report->driver_id,
+                                    //         'business_id' => $businessId->business_id, // Business type ID
+                                    //         'business_id_value' => $businessIdValue, // Specific business ID (business_ids.id)
+                                    //         'penalty_date' => $report->report_date,
+                                    //         'penalty_value' => $value,
+                                    //         'is_from_coordinate' => 1,
+                                    //     ]);
+                                    // }
                                 }
                             }
                         }

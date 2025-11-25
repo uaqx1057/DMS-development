@@ -66,43 +66,63 @@ class CreatePenalty extends Component
 
         $filePath = $this->penalty_file ? $this->penalty_file->store('penalties', 'public') : null;
 
-        // Find or create coordinator report
-        $report = CoordinatorReport::firstOrCreate(
-            [
-                'driver_id' => $this->driver_id,
-                'report_date' => $this->penalty_date,
-            ],
-            [
-                'status' => 'Pending',
-                'branch_id' => optional(Driver::find($this->driver_id))->branch_id,
-            ]
-        );
-        if (!empty($this->business_id_value)) {
-                $businessTypeIds = BusinessId::whereIn('id', [$this->business_id_value])
-                    ->pluck('business_id')
-                    ->unique()
-                    ->toArray();
-
-                $report->businesses()->syncWithoutDetaching($businessTypeIds);
-            }
-        // Check existing field value (field_id = 14)
-        $fieldValue = CoordinatorReportFieldValue::where('coordinator_report_id', $report->id)
+        $report = CoordinatorReport::where('driver_id', $this->driver_id)->where('report_date', $this->penalty_date)->first();
+        if(!$report){
+            $this->addError('penalty_date', translate('Please add first coordinate report at this date of this driver'));
+            return;
+        } else{
+            $fieldValue = CoordinatorReportFieldValue::where('coordinator_report_id', $report->id)
             ->where('business_id', $this->business_id)
             ->where('business_id_value', $this->business_id_value)
             ->where('field_id', 14)
             ->first();
 
-        if ($fieldValue) {
-            $fieldValue->update(['value' => $this->penalty_value]);
-        } else {
-            CoordinatorReportFieldValue::create([
-                'coordinator_report_id' => $report->id,
-                'business_id' => $this->business_id,
-                'business_id_value' => $this->business_id_value,
-                'field_id' => 14,
-                'value' => $this->penalty_value,
-            ]);
+            if(!$fieldValue){
+                $this->addError('penalty_date', translate('Please add first coordinate report at this date of this Driver with those Platform and Platform ID'));
+                return;
+            } else{
+                $fieldValue->update(['value' => (int)$this->penalty_value + (int)$fieldValue->value]);
+            }
         }
+        
+        // Above My Code
+        // Find or create coordinator report
+        // $report = CoordinatorReport::firstOrCreate(
+        //     [
+        //         'driver_id' => $this->driver_id,
+        //         'report_date' => $this->penalty_date,
+        //     ],
+        //     [
+        //         'status' => 'Pending',
+        //         'branch_id' => optional(Driver::find($this->driver_id))->branch_id,
+        //     ]
+        // );
+        // if (!empty($this->business_id_value)) {
+        //         $businessTypeIds = BusinessId::whereIn('id', [$this->business_id_value])
+        //             ->pluck('business_id')
+        //             ->unique()
+        //             ->toArray();
+
+        //         $report->businesses()->syncWithoutDetaching($businessTypeIds);
+        //     }
+        // // Check existing field value (field_id = 14)
+        // $fieldValue = CoordinatorReportFieldValue::where('coordinator_report_id', $report->id)
+        //     ->where('business_id', $this->business_id)
+        //     ->where('business_id_value', $this->business_id_value)
+        //     ->where('field_id', 14)
+        //     ->first();
+
+        // if ($fieldValue) {
+        //     $fieldValue->update(['value' => $this->penalty_value]);
+        // } else {
+        //     CoordinatorReportFieldValue::create([
+        //         'coordinator_report_id' => $report->id,
+        //         'business_id' => $this->business_id,
+        //         'business_id_value' => $this->business_id_value,
+        //         'field_id' => 14,
+        //         'value' => $this->penalty_value,
+        //     ]);
+        // }
 
         // Create penalty record
         Penalty::create([

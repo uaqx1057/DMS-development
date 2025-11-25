@@ -24,6 +24,11 @@ class CoordinatorReport extends Model
         return $this->hasMany(CoordinatorReportFieldValue::class);
     }
 
+    public function penalty_fields(): HasMany
+    {
+        return $this->hasMany(Penalty::class);
+    }
+
     /**
      * Get the driver that owns the CoordinatorReport
      *

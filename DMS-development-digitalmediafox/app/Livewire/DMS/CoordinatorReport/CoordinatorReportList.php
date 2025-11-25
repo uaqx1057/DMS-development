@@ -357,6 +357,7 @@ public function exportPdf()
 
         $user = Auth::user();
         $file = $this->csv_file;
+        $storedPath = $file->store('reports', 'public');
         $path = $file->getRealPath();
         $originalName = $file->getClientOriginalName();
         $storedName = time() . '_' . $originalName;
@@ -445,7 +446,7 @@ public function exportPdf()
         // Create Import Log
         ImportLog::create([
             'user_id' => $user?->id,
-            'file_name' => $storedName,
+            'file_name' => $storedPath,
             'original_name' => $originalName,
             'report_date' => $reportDate,
             'model' => CoordinatorReport::class,

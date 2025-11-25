@@ -20,6 +20,7 @@ return new class extends Migration
             $table->date('penalty_date');
             $table->integer('penalty_value');
             $table->string('penalty_file')->nullable();
+            $table->integer('is_from_coordinate')->default(0);
             $table->timestamps();
         });
     }

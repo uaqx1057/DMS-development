@@ -276,6 +276,16 @@ Route::get('/preview-file/{file}', function ($file) {
 })->name('preview-file');
 
 
+Route::get('/download-file/{path}', function ($path) {
+    // Decode the path in case it contains slashes
+    $filePath = base64_decode($path);
+    
+    if (!Storage::disk('public')->exists($filePath)) {
+        abort(404, 'File not found');
+    }
+    
+    return Storage::disk('public')->download($filePath);
+})->name('download.file');
 
 
 

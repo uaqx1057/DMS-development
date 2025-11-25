@@ -17,6 +17,7 @@ class Penalty extends Model
         'penalty_date',
         'penalty_value',
         'penalty_file',
+        'is_from_coordinate'
     ];
 
     public function driver() { return $this->belongsTo(Driver::class); }

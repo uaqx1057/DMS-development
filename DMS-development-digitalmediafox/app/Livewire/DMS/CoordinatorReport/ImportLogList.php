@@ -34,7 +34,7 @@ class ImportLogList extends Component
 
         $columns = [
             ['label' => 'User', 'column' => 'user', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'name'],
-            ['label' => 'File Name', 'column' => 'original_name', 'isData' => true, 'hasRelation' => false],
+            ['label' => 'File Name', 'column' => 'file_name', 'isData' => false, 'hasRelation' => false],
             ['label' => 'Report Date', 'column' => 'report_date', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Rows Imported', 'column' => 'rows_imported', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Imported At', 'column' => 'created_at', 'isData' => true, 'hasRelation' => false],
