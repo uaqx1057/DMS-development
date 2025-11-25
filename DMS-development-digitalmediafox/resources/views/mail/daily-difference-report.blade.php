@@ -36,70 +36,77 @@
 <body>
     <h1>Daily Report</h1>
     <p>Date: {{ \Carbon\Carbon::now()->format('d M Y') }}</p>
-    <p>Total collect by Supervisors = <strong>{{ $mailData['all_superviser_collected'] }}</strong></p>
-    <h3>Daily Supervisors Report</h3>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Sr. No.</th> {{-- Serial number column --}}
-                <th>Supervisor Name</th>
-                <th>Branch</th>
-                <th>Total Difference</th>
-                <th>Total Paid</th>
-                <th>Total Remaining</th>
-            </tr>
-        </thead>
-        <tbody>
-            @php
-                $index = 0;
-            @endphp
-            @foreach ($mailData['total_superviser_collected'] as $supervisor)
-                @if ($supervisor->total_receipt > 0 || $supervisor->total_paid > 0 || $supervisor->total_remaining > 0)
-                    <tr>
-                        <td>{{ $index + 1 }}</td>
-                        <td>{{ $supervisor->name }}</td>
-                        <td>{{ $supervisor->branch->name }}</td>
-                        <td>{{ $supervisor->total_receipt }}</td>
-                        <td>{{ $supervisor->total_paid }}</td>
-                        <td>{{ $supervisor->total_remaining }}</td>
-                    </tr>
-                @endif
-            @endforeach
+    @if ($mailData['all_superviser_collected'] > 0)
+        <p>Total collect by Supervisors = <strong>{{ $mailData['all_superviser_collected'] }}</strong></p>
+    @endif
 
-        </tbody>
-    </table>
+    @if ($mailData['superviserEmpty'] > 0)
+        <h3>Supervisors Report</h3>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Sr. No.</th> {{-- Serial number column --}}
+                    <th>Supervisor Name</th>
+                    <th>Branch</th>
+                    <th>Total Difference</th>
+                    <th>Total Paid</th>
+                    <th>Total Remaining</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php
+                    $index = 0;
+                @endphp
+                @foreach ($mailData['total_superviser_collected'] as $supervisor)
+                    @if ($supervisor->total_receipt > 0 || $supervisor->total_paid > 0 || $supervisor->total_remaining > 0)
+                        <tr>
+                            <td>{{ $index + 1 }}</td>
+                            <td>{{ $supervisor->name }}</td>
+                            <td>{{ $supervisor->branch->name }}</td>
+                            <td>{{ $supervisor->total_receipt }}</td>
+                            <td>{{ $supervisor->total_paid }}</td>
+                            <td>{{ $supervisor->total_remaining }}</td>
+                        </tr>
+                    @endif
+                @endforeach
+
+            </tbody>
+        </table>
+    @endif
     <br>
-    <h3>Daily Drivers Report</h3>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Sr. No.</th> {{-- Serial number column --}}
-                <th>Driver Name</th>
-                <th>Iqaama Number</th>
-                <th>Total Difference</th>
-                <th>Total Paid</th>
-                <th>Total Remaining</th>
-            </tr>
-        </thead>
-        <tbody>
-            @php
-                $index = 0;
-            @endphp
-            @foreach ($mailData['total_drivers_collected'] as $driver)
-                @if ($driver->total_receipt > 0 || $driver->total_paid > 0 || $driver->total_remaining > 0)
-                    <tr>
-                        <td>{{ $index + 1 }}</td> {{-- Serial number --}}
-                        <td>{{ $driver->name }}</td>
-                        <td>{{ $driver->iqaama_number }}</td>
-                        <td>{{ $driver->total_receipt }}</td>
-                        <td>{{ $driver->total_paid }}</td>
-                        <td>{{ $driver->total_remaining }}</td>
-                    </tr>
-                @endif
-            @endforeach
+    @if ($mailData['driverEmpty'] > 0)
+        <h3>Drivers Report</h3>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Sr. No.</th> {{-- Serial number column --}}
+                    <th>Driver Name</th>
+                    <th>Iqaama Number</th>
+                    <th>Total Difference</th>
+                    <th>Total Paid</th>
+                    <th>Total Remaining</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php
+                    $index = 0;
+                @endphp
+                @foreach ($mailData['total_drivers_collected'] as $driver)
+                    @if ($driver->total_receipt > 0 || $driver->total_paid > 0 || $driver->total_remaining > 0)
+                        <tr>
+                            <td>{{ $index + 1 }}</td> {{-- Serial number --}}
+                            <td>{{ $driver->name }}</td>
+                            <td>{{ $driver->iqaama_number }}</td>
+                            <td>{{ $driver->total_receipt }}</td>
+                            <td>{{ $driver->total_paid }}</td>
+                            <td>{{ $driver->total_remaining }}</td>
+                        </tr>
+                    @endif
+                @endforeach
 
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    @endif
     <br>
 </body>
 

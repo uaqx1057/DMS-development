@@ -18,6 +18,10 @@ class ReportMailController extends Controller
 {
     public function dailyReports()
     {
+        $dataEmpty = 0;
+        $superviserEmpty = 0;
+        $driverEmpty = 0;
+
         $supervisers = User::where('role_id', 8)->pluck('id')->toArray();
 
         $get_form_difference = DriverDifference::whereIn('user_id', $supervisers)
@@ -80,23 +84,53 @@ class ReportMailController extends Controller
                 return $driver;
             });
 
+
+        if ($all_superviser_collected > 0) {
+            $dataEmpty = 1;
+        }
+
+        foreach ($total_superviser_collected as $supervisor) {
+            if ($supervisor->total_receipt > 0 || $supervisor->total_paid > 0 || $supervisor->total_remaining > 0) {
+                $dataEmpty = 1;
+                $superviserEmpty = 1;
+            }
+        }
+
+        foreach ($total_drivers_collected as $driver) {
+            if ($driver->total_receipt > 0 || $driver->total_paid > 0 || $driver->total_remaining > 0) {
+                $dataEmpty = 1;
+                $driverEmpty = 1;
+            }
+        }
+
         $data = [
             'all_superviser_collected' => $all_superviser_collected,
             'total_superviser_collected' => $total_superviser_collected,
             'total_drivers_collected' => $total_drivers_collected,
+            'superviserEmpty' => $superviserEmpty,
+            'driverEmpty' => $driverEmpty,
         ];
 
-        $mailUsers = User::whereIn('role_id', [4, 8, 9])->pluck('email');
+        if ($dataEmpty == 1) {
 
-        foreach ($mailUsers as $email) {
-            Mail::to($email)->queue(new DailyDifferenceReportMail($data));
+            $mailUsers = User::whereIn('role_id', [4, 8, 9])->pluck('email');
+
+            foreach ($mailUsers as $email) {
+                Mail::to($email)->queue(new DailyDifferenceReportMail($data));
+            }
+            return "Emails added to queue!";
+        } else {
+            return "Data is empty!";
         }
 
-        return "Emails added to queue!";
 
     }
     public function weeklyReports()
     {
+        $dataEmpty = 0;
+        $superviserEmpty = 0;
+        $driverEmpty = 0;
+
         $today = Carbon::today();
         // dd($today->toDateString()); 
         $last7Days = Carbon::today()->subDays(6);
@@ -181,24 +215,53 @@ class ReportMailController extends Controller
                 return $driver;
             });
 
+
+        if ($all_superviser_collected > 0) {
+            $dataEmpty = 1;
+        }
+
+        foreach ($total_superviser_collected as $supervisor) {
+            if ($supervisor->total_receipt > 0 || $supervisor->total_paid > 0 || $supervisor->total_remaining > 0) {
+                $dataEmpty = 1;
+                $superviserEmpty = 1;
+            }
+        }
+
+        foreach ($total_drivers_collected as $driver) {
+            if ($driver->total_receipt > 0 || $driver->total_paid > 0 || $driver->total_remaining > 0) {
+                $dataEmpty = 1;
+                $driverEmpty = 1;
+            }
+        }
+
         $data = [
             'all_superviser_collected' => $all_superviser_collected,
             'total_superviser_collected' => $total_superviser_collected,
             'total_drivers_collected' => $total_drivers_collected,
+            'superviserEmpty' => $superviserEmpty,
+            'driverEmpty' => $driverEmpty,
         ];
 
-        $mailUsers = User::whereIn('role_id', [4, 8, 9])->pluck('email');
+        if ($dataEmpty == 1) {
 
-        foreach ($mailUsers as $email) {
-            Mail::to($email)->queue(new WeeklyDifferenceReportMail($data));
+            $mailUsers = User::whereIn('role_id', [4, 8, 9])->pluck('email');
+
+            foreach ($mailUsers as $email) {
+                Mail::to($email)->queue(new WeeklyDifferenceReportMail($data));
+            }
+            return "Emails added to queue!";
+        } else {
+            return "Data is empty!";
         }
-
-        return "Emails added to queue!";
 
     }
 
     public function monthlyReports()
     {
+        $dataEmpty = 0;
+        $superviserEmpty = 0;
+        $driverEmpty = 0;
+
         $today = Carbon::today(); // 2025-11-24
         $last30Days = (clone $today)->subMonth()->addDay(); // 2025-10-25
 
@@ -239,7 +302,7 @@ class ReportMailController extends Controller
                 // Add a date range attribute
                 $supervisor->date_range = $last30Days->toDateString() . ' to ' . $today->toDateString();
 
-                 $supervisor->total_driver_difference = $supervisor->total_driver_difference ?? 0;
+                $supervisor->total_driver_difference = $supervisor->total_driver_difference ?? 0;
                 $supervisor->total_driver_receipts = $supervisor->total_driver_receipts ?? 0;
 
                 $supervisor->total_receipt = number_format($supervisor->total_driver_receipts + $supervisor->total_driver_difference, 2, '.', '');
@@ -282,19 +345,42 @@ class ReportMailController extends Controller
                 return $driver;
             });
 
+        if ($all_superviser_collected > 0) {
+            $dataEmpty = 1;
+        }
+
+        foreach ($total_superviser_collected as $supervisor) {
+            if ($supervisor->total_receipt > 0 || $supervisor->total_paid > 0 || $supervisor->total_remaining > 0) {
+                $dataEmpty = 1;
+                $superviserEmpty = 1;
+            }
+        }
+
+        foreach ($total_drivers_collected as $driver) {
+            if ($driver->total_receipt > 0 || $driver->total_paid > 0 || $driver->total_remaining > 0) {
+                $dataEmpty = 1;
+                $driverEmpty = 1;
+            }
+        }
+
         $data = [
             'all_superviser_collected' => $all_superviser_collected,
             'total_superviser_collected' => $total_superviser_collected,
             'total_drivers_collected' => $total_drivers_collected,
+            'superviserEmpty' => $superviserEmpty,
+            'driverEmpty' => $driverEmpty,
         ];
 
-        $mailUsers = User::whereIn('role_id', [4, 8, 9])->pluck('email');
+        if ($dataEmpty == 1) {
 
-        foreach ($mailUsers as $email) {
-            Mail::to($email)->queue(new MonthlyDifferenceReportMail($data));
+            $mailUsers = User::whereIn('role_id', [4, 8, 9])->pluck('email');
+
+            foreach ($mailUsers as $email) {
+                Mail::to($email)->queue(new MonthlyDifferenceReportMail($data));
+            }
+            return "Emails added to queue!";
+        } else {
+            return "Data is empty!";
         }
-
-        return "Emails added to queue!";
-
     }
 }

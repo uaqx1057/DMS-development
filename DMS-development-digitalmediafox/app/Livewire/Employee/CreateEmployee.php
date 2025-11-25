@@ -2,8 +2,10 @@
 
 namespace App\Livewire\Employee;
 
+use App\Mail\UserCreatedMail;
 use App\Services\DepartmentService;
 use App\Services\EmployeeService;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use App\Services\DesignationService;
 use App\Traits\Employee\EmployeeTrait;
@@ -99,11 +101,13 @@ class CreateEmployee extends Component
             if($this->image){
                 $validated['image'] = $this->image->store('employees', 'public');
             }
-
+            $plainPassword = $validated['password'];
             $validated['password'] = Hash::make($validated['password']);
 
             // * Creating Employee
-            $this->employeeService->create($validated);
+            $employee = $this->employeeService->create($validated);
+            // dd($employee);
+            Mail::to($employee->email)->send(new UserCreatedMail($employee, $plainPassword));
 
             session()->flash('success', translate('Employee Created Successfully!'));
             return $this->redirectRoute('employee.index', navigate:true);
