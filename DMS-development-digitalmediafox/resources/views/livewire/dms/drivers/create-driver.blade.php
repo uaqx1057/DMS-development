@@ -266,7 +266,7 @@
 
 @push('scripts')
 <script>
-    document.addEventListener('livewire:init', () => {
+    document.addEventListener('livewire:navigated', () => {
         // Function to initialize Select2
         function initializeSelect2(element) {
             if (!$(element).hasClass('select2-hidden-accessible')) {

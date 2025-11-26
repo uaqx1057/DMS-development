@@ -351,7 +351,7 @@
         @endif
         @push('scripts')
 <script>
-document.addEventListener('livewire:init', () => {
+document.addEventListener('livewire:navigated', () => {
     // Function to initialize all select2 dropdowns
     function initSelect2() {
         $('.select2-new-business-ids').each(function() {
