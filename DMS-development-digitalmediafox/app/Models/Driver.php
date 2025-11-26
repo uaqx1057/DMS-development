@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -17,10 +18,23 @@ class Driver extends Authenticatable
 {
     use HasFactory, SoftDeletes, HasApiTokens;
 
+    protected static function booted()
+    {
+        // Global scope for onboarding_stage = completed
+        static::addGlobalScope('completed_onboarding', function (Builder $builder) {
+            $builder->where('onboarding_stage', 'completed');
+        });
 
+        // Global scope to exclude drivers present in offboardings table
+        static::addGlobalScope('not_offboarded', function (Builder $builder) {
+            $builder->whereNotIn('drivers.id', function ($query) {
+                $query->select('driver_id')->from('offboarding');
+            });
+        });
+    }
     protected $guard = 'driver';
 
-protected $fillable = [
+    protected $fillable = [
         'branch_id',
         'driver_type_id',
         'image',
@@ -58,7 +72,8 @@ protected $fillable = [
 
     protected $guarded = ['id'];
 
-    public function scopeSearch($query, $value){
+    public function scopeSearch($query, $value)
+    {
         $query->where("name", "like", "%{$value}%")->orWhere("iqaama_number", "like", "%{$value}%");
     }
 
@@ -144,8 +159,8 @@ protected $fillable = [
     public function businessIds()
     {
         return $this->belongsToMany(BusinessId::class, 'driver_business_ids')
-                    ->withPivot(['previous_driver_id', 'assigned_at', 'transferred_at'])
-                    ->withTimestamps();
+            ->withPivot(['previous_driver_id', 'assigned_at', 'transferred_at'])
+            ->withTimestamps();
     }
 
     public function assignedBusinessIds()
