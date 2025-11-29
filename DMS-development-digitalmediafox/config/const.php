@@ -26,6 +26,8 @@ return [
     'OPERATIONSUPERVISERDIFFERENCELOG' => 26,
     'AMOUNTTRANSFER' => 27,
     'FRANCHIESREPORT' => 28,
+    'REQUESTRECHARGE' => 29,
+    'RECHARGE' => 30,
     'VIEW' => 'is_view',
     'ADD' => 'is_add',
     'EDIT' => 'is_edit',

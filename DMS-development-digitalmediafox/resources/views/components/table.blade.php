@@ -13,6 +13,7 @@
     'routeRole'=> null,
     'edit_permission' => false,
     'showModal' => false,
+    'rechargePermission' => false,
     'isModalView' => false
 ])
 
@@ -56,6 +57,7 @@
                 :showModal="$showModal"
                 :isModalView="$isModalView"
                 :delete_booklet="$delete_booklet"
+                :rechargePermission="$rechargePermission"
             />
         </table>
     </div>

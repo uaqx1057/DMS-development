@@ -1,4 +1,4 @@
-@props(['item', 'key', 'page', 'perPage', 'columns', 'isModalEdit' => false, 'isModalRole' => false, 'routeEdit'=> null, 'routeRole'=> null, 'routeView'=> null, 'edit_permission' => false, 'showModal' => false, 'isModalView' => false, 'delete_booklet' => false])
+@props(['item', 'key', 'page', 'perPage', 'columns', 'isModalEdit' => false, 'isModalRole' => false, 'routeEdit'=> null, 'routeRole'=> null, 'routeView'=> null, 'edit_permission' => false, 'showModal' => false, 'isModalView' => false, 'delete_booklet' => false, 'rechargePermission' => false])
 
 <tr wire:key="{{ $item->id . $page }}">
     <td class="">{{ ++$key + $perPage * ($page - 1) }}.</td>
@@ -26,6 +26,16 @@
                 {{-- For Platform IDs Report - pass business_id_value --}}
                 <a href="{{ Storage::url('app/public/' . $item->penalty_file) }}" target="_blank" class="btn btn-sm btn-primary">View Proof</a>
             @endif
+        @elseif ($column['column'] == 'status')
+            @if (auth()->user()->role_id == 8)    
+                <p class="fw-normal fs-6 badge rounded-pill 
+                    {{ $item->status == 'pending' ? 'text-bg-primary' : 
+                    ($item->status == 'accept' ? 'text-bg-success' : 
+                    ($item->status == 'reject' ? 'text-bg-danger' : 'text-bg-secondary')) 
+                    }}">
+                    {{ ucfirst($item->status) }}
+                </p>
+            @endif
         @elseif ($column['column'] == 'receipt_image')
             @if(isset($item->receipt_image))
                 {{-- For Platform IDs Report - pass business_id_value --}}
@@ -52,9 +62,25 @@
         @elseif ($column['column'] === 'action')
             <div class="flex items-center justify-center gap-1">
                 <div class="dropdown d-inline-block">
-                    <button class="btn btn-soft-secondary btn-sm dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="align-middle ri-more-fill"></i>
-                    </button>
+                    @if ($rechargePermission)
+                        @if ($item->status == 'pending')
+                            <button class="btn btn-soft-secondary btn-sm dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="align-middle ri-more-fill"></i>
+                            </button>
+                            @else
+                            <p class="badge fw-normal fs-6 rounded-pill 
+                                {{ $item->status == 'pending' ? 'text-bg-warning' : 
+                                ($item->status == 'accept' ? 'text-bg-success' : 
+                                ($item->status == 'reject' ? 'text-bg-danger' : 'text-bg-secondary')) 
+                                }}">
+                                {{ ucfirst($item->status) . 'ed' }}
+                            </p>
+                        @endif
+                    @else
+                        <button class="btn btn-soft-secondary btn-sm dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="align-middle ri-more-fill"></i>
+                        </button>
+                    @endif
                     <ul class="dropdown-menu dropdown-menu-end">
                         @if ($isModalView)
                             <li>
@@ -93,10 +119,43 @@
                                     @translate('Delete')
                             </button>
                         @endif
+
+                        @if ($rechargePermission)
+                            @if ($item->status == 'pending')
+                                <button class="dropdown-item edit-item-btn"
+                                wire:click="accept({{ $item->id }})"
+                                {{-- onclick="return confirm('Are you sure you want to delete this booklet?')" --}}
+                                >
+                                    <i class="align-bottom ri-check-fill me-2 text-success fw-bold"></i>
+                                        @translate('Accept')
+                                </button>
+                            @endif
+                        @endif
+                        @if ($rechargePermission)
+                            @if ($item->status == 'pending')    
+                                <button class="dropdown-item edit-item-btn"
+                                wire:click="reject({{ $item->id }})"
+                                {{-- onclick="return confirm('Are you sure you want to delete this booklet?')" --}}
+                                >
+                                    <i class="align-bottom ri-close-fill me-2 text-danger fw-bold"></i>
+                                        @translate('Reject')
+                                </button>
+                            @endif
+                        @endif
                     </ul>
                 </div>
 
             </div>
+        @elseif ($column['column'] === 'driverRecharge')
+            @if($item->recharge)
+                <p class="badge fw-normal fs-6 rounded-pill text-bg-info">Recharged</p>
+            @else
+            <a href="{{ route('recharge.create', $item->id) }}"
+            wire:navigate 
+            class="btn btn-sm btn-primary">
+                Recharge
+            </a>
+            @endif
         @endif
     </td>
     @endforeach
