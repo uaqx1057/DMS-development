@@ -45,7 +45,18 @@
     <x-ui.row>
         <x-ui.col class="col-lg-12">
             <x-ui.card>
-                <x-ui.card-header title="Request Recharge List" :href="route('request-recharge.create')" :add="$add_permission"/>
+                <x-ui.card-header title="Request Recharge List" :href="route('request-recharge.create')" :add="$add_permission" :export="$requestRecharges->count() > 0">
+                    @if($requestRecharges->count() > 0)
+                        <div class="d-flex gap-2">
+                            <button wire:click="exportCsv" class="btn btn-secondary btn-sm">
+                                <i class="ri-file-excel-2-line align-bottom me-1"></i> Export CSV
+                            </button>
+                            <button wire:click="exportPdf" class="btn btn-danger btn-sm">
+                                <i class="ri-file-pdf-line align-bottom me-1"></i> Export PDF
+                            </button>
+                        </div>
+                    @endif
+                </x-ui.card-header>
                 <x-ui.card-body>
                     <x-table
                         :columns="$columns"

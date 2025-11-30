@@ -8,6 +8,7 @@ use App\Models\Driver;
 use App\Models\RequestRecharge;
 use App\Models\User;
 use App\Traits\DataTableTrait;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Component;
 
@@ -47,10 +48,11 @@ class RequestRechargeList extends Component
         $edit_permission = false;
 
         $columns = [
-            ['label' => 'Driver Name', 'column' => 'driver', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'name'],
+            ['label' => 'Driver', 'column' => 'driver_with_iqama', 'isData' => true, 'hasRelation' => false],
+            ['label' => 'Branch', 'column' => 'driver_branch', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Phone No.', 'column' => 'mobile', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Opearator', 'column' => 'opearator', 'isData' => true, 'hasRelation' => false],
-            ['label' => 'Created By', 'column' => 'user', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'name'],
+            ['label' => 'Requested By', 'column' => 'user', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'name'],
         ];
 
         if (auth()->user()->role_id == 8) {
@@ -68,6 +70,11 @@ class RequestRechargeList extends Component
 
         $query = RequestRecharge::with(['driver', 'user']);
 
+         $query->when(auth()->user()->role_id != 1, function ($query) {
+                $query->whereHas('driver', function ($q) {
+                    $q->where('branch_id', auth()->user()->branch_id);
+                });
+            });
         // Apply search if not empty
         if ($this->search) {
             $search = $this->search;
@@ -89,7 +96,12 @@ class RequestRechargeList extends Component
         $requestRecharges = $query
             ->orderBy($this->sortColumn, $this->sortDirection)
             ->paginate($this->perPage);
-
+            
+        $requestRecharges->getCollection()->transform(function ($recharge) {
+            $recharge->driver_with_iqama = $recharge->driver->name . '(' . $recharge->driver->iqaama_number . ')';
+            $recharge->driver_branch = $recharge->driver->branch->name ?? '';
+            return $recharge;
+        });
 
 
         return view('livewire.dms.request-recharge.request-recharge-list', compact(
@@ -106,7 +118,7 @@ class RequestRechargeList extends Component
     {
         $requestRecharge = RequestRecharge::find($id);
         if ($requestRecharge) {
-            RequestRecharge::where('id', $id)->update(['status' => 'accept', 'approved_by' => auth()->user()->id]);
+            RequestRecharge::where('id', $id)->update(['status' => 'accepted', 'approved_by' => auth()->user()->id]);
         }
 
         $driverData = Driver::with('branch')->where('id', $requestRecharge->driver_id)->first();
@@ -133,7 +145,7 @@ class RequestRechargeList extends Component
         $this->validate();
         $requestRecharge = RequestRecharge::find($this->selectedId);
         if ($requestRecharge) {
-            RequestRecharge::where('id', $this->selectedId)->update(['status' => 'reject', 'approved_by' => auth()->user()->id]);
+            RequestRecharge::where('id', $this->selectedId)->update(['status' => 'rejected', 'approved_by' => auth()->user()->id]);
         }
 
         $driverData = Driver::with('branch')->where('id', $requestRecharge->driver_id)->first();
@@ -150,4 +162,131 @@ class RequestRechargeList extends Component
 
         session()->flash('success', __('Recharge request has been reviewed and has been rejected'));
     }
+
+    public function exportPdf()
+    {
+
+        $columns = [
+            ['label' => 'Driver', 'column'  => 'name'],
+            ['label' => 'Branch.', 'column' => 'branch'],
+            ['label' => 'Phone No.', 'column' => 'mobile'],
+            ['label' => 'Opearator', 'column' => 'opearator'],
+            ['label' => 'Status', 'column' => 'status'],
+            ['label' => 'Requested By', 'column' => 'user']
+        ];
+
+        $query = RequestRecharge::with(['driver', 'user']);
+
+        $query = $query->when(auth()->user()->role_id != 1, function ($query) {
+                $query->whereHas('driver', function ($q) {
+                    $q->where('branch_id', auth()->user()->branch_id);
+                });
+            });
+        // Apply search if not empty
+        if ($this->search) {
+            $search = $this->search;
+
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('driver', function ($d) use ($search) {
+                    $d->where('name', 'LIKE', "%{$search}%");
+                })
+                    ->orWhereHas('user', function ($u) use ($search) {
+                        $u->where('name', 'LIKE', "%{$search}%");
+                    })
+                    ->orWhere('status', 'LIKE', "%{$search}%")
+                    ->orWhere('mobile', 'LIKE', "%{$search}%")
+                    ->orWhere('opearator', 'LIKE', "%{$search}%");
+            });
+        }
+
+        // Final result
+        $requestRecharges = $query->get()->transform(function ($recharge) {
+            $recharge->driver_with_iqama = $recharge->driver->name . '(' . $recharge->driver->iqaama_number . ')';
+            $recharge->driver_branch = $recharge->driver->branch->name ?? '';
+            return $recharge;
+            });
+
+        // Generate PDF from a Blade view
+        $pdf = Pdf::loadView('exports.reqeust-recharge', [
+            'requestRecharges' => $requestRecharges,
+            'columns' => $columns,
+        ]);
+
+        $filename = 'request-recharge-list-' . now()->format('Y-m-d') . '.pdf';
+
+        return response()->streamDownload(
+            fn () => print($pdf->output()),
+            $filename,
+            ['Content-Type' => 'application/pdf']
+        );
+    }
+
+    public function exportCsv()
+    {
+        // Prepare CSV headers
+        $headers = [
+            'Driver',
+            'Branch',
+            'Phone No',
+            'Opearator',
+            'Status',
+            'Requested By',
+        ];
+
+        $query = RequestRecharge::with(['driver', 'user']);
+
+        // Branch Filter
+        $query = $query->when(auth()->user()->role_id != 1, function ($query) {
+            $query->whereHas('driver', function ($q) {
+                $q->where('branch_id', auth()->user()->branch_id);
+            });
+        });
+
+        // Search Filter
+        if ($this->search) {
+            $search = $this->search;
+
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('driver', function ($d) use ($search) {
+                    $d->where('name', 'LIKE', "%{$search}%");
+                })
+                ->orWhereHas('user', function ($u) use ($search) {
+                    $u->where('name', 'LIKE', "%{$search}%");
+                })
+                ->orWhere('status', 'LIKE', "%{$search}%")
+                ->orWhere('mobile', 'LIKE', "%{$search}%")
+                ->orWhere('opearator', 'LIKE', "%{$search}%");
+            });
+        }
+
+        // Final result transformation
+        $requestRecharges = $query->get()->transform(function ($recharge) {
+            $recharge->driver_with_iqama = $recharge->driver->name . '(' . $recharge->driver->iqaama_number . ')';
+            $recharge->driver_branch = $recharge->driver->branch->name ?? '';
+            return $recharge;
+        });
+
+        // Build CSV data
+        $csvData = implode(',', $headers) . "\n"; // header row
+
+        foreach ($requestRecharges as $row) {
+            $csvData .= implode(',', [
+                $row->driver_with_iqama,
+                $row->driver_branch,
+                $row->mobile,
+                $row->opearator,
+                $row->status,
+                $row->user->name,
+            ]) . "\n";
+        }
+
+        $filename = 'request-recharge-list-' . now()->format('Y-m-d') . '.csv';
+
+        return response()->streamDownload(
+            fn () => print($csvData),
+            $filename,
+            ['Content-Type' => 'text/csv']
+        );
+    }
+
 }

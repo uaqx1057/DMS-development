@@ -19,12 +19,34 @@
 
     <div class="d-flex gap-2">
         @if ($export)
-            <button wire:click="exportPdf" class="btn btn-danger">
-                <i class="align-bottom ri-file-pdf-line me-1"></i> @translate('Export PDF')
+            <button wire:click="exportPdf"
+                class="btn btn-danger btn-sm"
+                wire:loading.attr="disabled">
+                <!-- Normal text (when not loading) -->
+                <span wire:loading.remove wire:target="exportPdf">
+                    <i class="ri-file-pdf-line align-bottom me-1"></i> Export PDF
+                </span>
+                <!-- Loading spinner -->
+                <span wire:loading wire:target="exportPdf">
+                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                    Exporting...
+                </span>
             </button>
-            <button wire:click="exportCsv" class="btn btn-success">
+
+           <button wire:click="exportCsv"
+                class="btn btn-success"
+                wire:loading.attr="disabled">
+            <!-- Normal Text (when not loading) -->
+            <span wire:loading.remove wire:target="exportCsv">
                 <i class="align-bottom ri-file-excel-line me-1"></i> @translate('Export CSV')
-            </button>
+            </span>
+            <!-- Loading Spinner -->
+            <span wire:loading wire:target="exportCsv">
+                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                @translate('Exporting...')
+            </span>
+        </button>
+
         @endif
         @if ($import)
            <!-- Button to open modal -->

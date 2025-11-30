@@ -28,6 +28,7 @@ return [
     'FRANCHIESREPORT' => 28,
     'REQUESTRECHARGE' => 29,
     'RECHARGE' => 30,
+    'RECHARGELOG' => 31,
     'VIEW' => 'is_view',
     'ADD' => 'is_add',
     'EDIT' => 'is_edit',

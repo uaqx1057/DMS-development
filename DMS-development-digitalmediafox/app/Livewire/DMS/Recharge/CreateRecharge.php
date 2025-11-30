@@ -13,7 +13,7 @@ use Livewire\Component;
 
 class CreateRecharge extends Component
 {
-    use WithFileUploads;
+    use WithFileUploads, WithFileUploads;
     public $request_recharge_id;
     public $amount;
     public $date;
@@ -33,7 +33,7 @@ class CreateRecharge extends Component
     public function render()
     {
         $requestRecharge = RequestRecharge::find($this->request_recharge_id);
-        if ($requestRecharge->status !== 'accept') {
+        if ($requestRecharge->status !== 'accepted') {
             abort(404);
         }
 
@@ -50,22 +50,31 @@ class CreateRecharge extends Component
 
     public function save()
     {
-        logger($this->request_recharge_id);
         $this->validate([
             'amount' => 'required',
             'image' => 'required|mimetypes:image/*,application/pdf|max:2048',
             'date' => 'required|date|before_or_equal:today',
         ]);
 
+        $requestRecharge = RequestRecharge::find($this->request_recharge_id);
+
+        $driverRecharge = Driver::where('id',$requestRecharge->driver_id)->first();
+
+        if ($this->image) {
+            $filename = now()->format('Ymd_His') . '-' . $driverRecharge->name . '-' . $driverRecharge->iqaama_number . '.' . $this->image->getClientOriginalExtension();
+            $path = $this->image->storeAs('recharge', $filename, 'public');
+        } else {
+            $path = null;
+        }
+
         $recharge =  Recharge::create([
             'request_recharge_id' => $this->request_recharge_id,
             'user_id' => auth()->id(),
             'amount' => $this->amount,
             'date' => $this->date,
-            'image' => $this->image,
+            'image' => $path,
         ]);
 
-        $requestRecharge = RequestRecharge::find($this->request_recharge_id);
         $driverData = Driver::with('branch')->where('id', $requestRecharge->driver_id)->first();
         $rechargeBy = User::with('branch')->with('role')->where('id', auth()->user()->id)->first();
 

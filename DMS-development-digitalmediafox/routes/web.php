@@ -20,6 +20,7 @@ use App\Livewire\DMS\OperationSuperviser\OperationSuperviserDifferenceList;
 use App\Livewire\DMS\OperationSuperviser\OperationSuperviserDifferenceLog;
 use App\Livewire\DMS\Recharge\CreateRecharge;
 use App\Livewire\DMS\Recharge\Rechargelist;
+use App\Livewire\DMS\Recharge\RechargeLog;
 use App\Livewire\DMS\RequestRecharge\CreateRequestRecharge;
 use App\Livewire\DMS\RequestRecharge\RequestRechargeList;
 use App\Livewire\Employee\{CreateEmployee, EditEmployee, EmployeeList};
@@ -136,6 +137,7 @@ Route::get('/orders', OrderDetails::class)->name('orders.index');
         Route::prefix('recharge')->as('recharge.')->group(function () {
             Route::get('/', Rechargelist::class)->name('index')->middleware('permission:' . config('const.RECHARGE') . ',' . config('const.VIEW'));
             Route::get('/create/{id}', CreateRecharge::class)->name('create')->middleware('permission:' . config('const.RECHARGE') . ',' . config('const.ADD'));
+            Route::get('/log', RechargeLog::class)->name('log')->middleware('permission:' . config('const.RECHARGELOG') . ',' . config('const.VIEW'));
         });
 
 

@@ -1,4 +1,4 @@
-@props(['item', 'key', 'page', 'perPage', 'columns', 'isModalEdit' => false, 'isModalRole' => false, 'routeEdit'=> null, 'routeRole'=> null, 'routeView'=> null, 'edit_permission' => false, 'showModal' => false, 'isModalView' => false, 'delete_booklet' => false, 'rechargePermission' => false])
+@props(['item', 'key', 'page', 'perPage', 'columns', 'isModalEdit' => false, 'isModalRole' => false, 'routeEdit'=> null, 'routeRole'=> null, 'routeView'=> null, 'edit_permission' => false, 'showModal' => false, 'isModalView' => false, 'delete_booklet' => false, 'rechargePermission' => false, 'createRechargeDriver' => false])
 
 <tr wire:key="{{ $item->id . $page }}">
     <td class="">{{ ++$key + $perPage * ($page - 1) }}.</td>
@@ -17,7 +17,7 @@
                 {{-- Encode the full path including directory --}}
                 <a href="{{ route('download.file', ['path' => base64_encode($item->file_name)]) }}" 
                 target="_blank" 
-                class="">
+                class="text-primary text-decoration-underline">
                     {{ $item->original_name }}
                 </a>
             @endif
@@ -27,7 +27,7 @@
                 <a href="{{ Storage::url('app/public/' . $item->penalty_file) }}" target="_blank" class="btn btn-sm btn-primary">View Proof</a>
             @endif
         @elseif ($column['column'] == 'status')
-            @if (auth()->user()->role_id == 8)    
+            @if (auth()->user()->role_id == 8 || $createRechargeDriver)    
                 <p class="fw-normal fs-6 badge rounded-pill 
                     {{ $item->status == 'pending' ? 'text-bg-primary' : 
                     ($item->status == 'accept' ? 'text-bg-success' : 
@@ -35,6 +35,12 @@
                     }}">
                     {{ ucfirst($item->status) }}
                 </p>
+            @endif
+        @elseif ($column['column'] == 'recharge')
+            @if(isset($item->recharge->image))
+                {{-- For Platform IDs Report - pass business_id_value --}}
+                <a href="{{ Storage::url('app/public/' . $item->recharge->image) }}" target="_blank" class="btn btn-sm btn-primary">View Proof</a>
+                {{-- <p>{{ $item->recharge->image }}</p> --}}
             @endif
         @elseif ($column['column'] == 'receipt_image')
             @if(isset($item->receipt_image))
@@ -69,9 +75,9 @@
                             </button>
                             @else
                             <p class="badge fw-normal fs-6 rounded-pill 
-                                {{ $item->status == 'pending' ? 'text-bg-warning' : 
-                                ($item->status == 'accept' ? 'text-bg-success' : 
-                                ($item->status == 'reject' ? 'text-bg-danger' : 'text-bg-secondary')) 
+                                {{ str_contains($item->status, 'pending') ? 'text-bg-warning' : 
+                                (str_contains($item->status, 'accept') ? 'text-bg-success' : 
+                                (str_contains($item->status, 'reject') ? 'text-bg-danger' : 'text-bg-secondary')) 
                                 }}">
                                 {{ ucfirst($item->status) . 'ed' }}
                             </p>
@@ -150,11 +156,15 @@
             @if($item->recharge)
                 <p class="badge fw-normal fs-6 rounded-pill text-bg-info">Recharged</p>
             @else
-            <a href="{{ route('recharge.create', $item->id) }}"
-            wire:navigate 
-            class="btn btn-sm btn-primary">
-                Recharge
-            </a>
+                @if ($createRechargeDriver)
+                    <p class="badge fw-normal fs-6 {{ str_contains($item->status, 'reject') ? 'text-bg-danger' : 'text-bg-primary' }}">{{ str_contains($item->status, 'reject') ? 'Rejected' : 'Pending' }}</p>
+                @else
+                <a href="{{ route('recharge.create', $item->id) }}"
+                wire:navigate 
+                class="btn btn-sm btn-primary">
+                    Recharge
+                </a>
+                @endif
             @endif
         @endif
     </td>

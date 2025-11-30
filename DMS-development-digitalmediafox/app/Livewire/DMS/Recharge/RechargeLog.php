@@ -7,11 +7,11 @@ use App\Traits\DataTableTrait;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Livewire\Component;
 
-class Rechargelist extends Component
+class RechargeLog extends Component
 {
     use DataTableTrait;
-    private string $main_menu = 'Recharge';
-    private string $menu = 'Recharge List';
+    private string $main_menu = 'Log';
+    private string $menu = 'Recharge Log';
 
     public function mount()
     {
@@ -39,7 +39,8 @@ class Rechargelist extends Component
             ['label' => 'Branch', 'column' => 'driver_branch', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Phone No.', 'column' => 'mobile', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Opearator', 'column' => 'opearator', 'isData' => true, 'hasRelation' => false],
-            // ['label' => 'Status', 'column' => 'status', 'isData' => false, 'hasRelation' => false],
+            ['label' => 'Status', 'column' => 'status', 'isData' => false, 'hasRelation' => false],
+            ['label' => 'Requested By', 'column' => 'user', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'name'],
             ['label' => 'Approved By', 'column' => 'approved', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'name'],
             ['label' => 'Date', 'column' => 'recharge', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'date'],
             ['label' => 'Amount', 'column' => 'recharge', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'amount'],
@@ -48,7 +49,7 @@ class Rechargelist extends Component
         ];
 
 
-        $query = RequestRecharge::with(['recharge', 'user', 'driver', 'approved'])->where('status', 'accepted');
+        $query = RequestRecharge::with(['recharge', 'user', 'driver', 'approved']);
 
         // Apply search if not empty
         if ($this->search) {
@@ -77,8 +78,7 @@ class Rechargelist extends Component
             $recharge->driver_branch = $recharge->driver->branch->name ?? '';
             return $recharge;
         });
-
-        return view('livewire.dms.recharge.rechargelist', compact(
+        return view('livewire.dms.recharge.recharge-log', compact(
             'requestRecharges',
             'main_menu',
             'menu',
@@ -96,14 +96,16 @@ class Rechargelist extends Component
             ['label' => 'Branch', 'column' => 'driver_branch'],
             ['label' => 'Phone No.', 'column' => 'mobile'],
             ['label' => 'Opearator', 'column' => 'opearator'],
+            ['label' => 'Status', 'column' => 'status'],
+            ['label' => 'Requested By', 'column' => 'user'],
             ['label' => 'Approved By', 'column' => 'approved'],
             ['label' => 'Date', 'column' => 'recharge'],
             ['label' => 'Amount', 'column' => 'recharge'],
             // ['label' => 'View', 'column' => 'recharge'],
-            ['label' => 'Status', 'column' => 'driverRecharge'],
+            ['label' => 'Process', 'column' => 'driverRecharge'],
         ];
 
-        $query = RequestRecharge::with(['recharge', 'user', 'driver', 'approved'])->where('status', 'accepted');
+        $query = RequestRecharge::with(['recharge', 'user', 'driver', 'approved']);
 
         // Apply search if not empty
         if ($this->search) {
@@ -132,12 +134,12 @@ class Rechargelist extends Component
         });
 
         // Generate PDF from a Blade view
-        $pdf = Pdf::loadView('exports.recharge', [
+        $pdf = Pdf::loadView('exports.recharge-log', [
             'requestRecharges' => $requestRecharges,
             'columns' => $columns,
         ]);
 
-        $filename = 'request-recharge-list-' . now()->format('Y-m-d') . '.pdf';
+        $filename = 'recharge-log-' . now()->format('Y-m-d') . '.pdf';
 
         return response()->streamDownload(
             fn() => print ($pdf->output()),
@@ -154,16 +156,24 @@ class Rechargelist extends Component
             'Branch',
             'Phone No.',
             'Opearator',
+            'Status',
+            'Requested By',
             'Approved By',
             'Date',
             'Amount',
-            // 'View',
-            'Status',
+            'Process',
         ];
 
-        $query = RequestRecharge::with(['recharge', 'user', 'driver', 'approved'])->where('status', 'accepted');
+        $query = RequestRecharge::with(['driver', 'user', 'recharge', 'approved']);
 
-        // Apply search if not empty
+        // Branch filter
+        // $query = $query->when(auth()->user()->role_id != 1, function ($query) {
+        //     $query->whereHas('driver', function ($q) {
+        //         $q->where('branch_id', auth()->user()->branch_id);
+        //     });
+        // });
+
+        // Search filter
         if ($this->search) {
             $search = $this->search;
 
@@ -180,10 +190,8 @@ class Rechargelist extends Component
             });
         }
 
-        // Final result
-        $requestRecharges = $query->get();
-
-        $requestRecharges->transform(function ($recharge) {
+        // Final result transformation
+        $requestRecharges = $query->get()->transform(function ($recharge) {
             $recharge->driver_with_iqama = $recharge->driver->name . '(' . $recharge->driver->iqaama_number . ')';
             $recharge->driver_branch = $recharge->driver->branch->name ?? '';
             return $recharge;
@@ -194,24 +202,34 @@ class Rechargelist extends Component
 
         foreach ($requestRecharges as $row) {
 
-            $view = optional($row->recharge)->image
-                ? asset('storage/' . $row->recharge->image)
-                : '';
+            $formattedDate = optional($row->recharge)->date
+                ? \Carbon\Carbon::parse($row->recharge->date)->format('d-m-Y')
+                : '-';
 
             $csvData .= implode(',', [
                 '"' . $row->driver_with_iqama . '"',
                 '"' . $row->driver_branch . '"',
-                '"' . $row->mobile . '"',
-                '"' . $row->opearator . '"',
-                '"' . optional($row->approved)->name . '"',
-                '"' . (optional($row->recharge)->date
-                    ? \Carbon\Carbon::parse($row->recharge->date)->format('d-m-Y')
-                    : '') . '"',
-                '"' . (optional($row->recharge)->amount ?? '') . '"',
-                // '"' . $view . '"',
-                '"' . ($row->recharge ? 'Recharged' : 'Pending') . '"',
+                '"' . ($row->mobile ?? '-') . '"',
+                '"' . ($row->opearator ?? '-') . '"',
+                '"' . ($row->status ?? '-') . '"',
+
+                // user name
+                '"' . ($row->user->name ?? '-') . '"',
+
+                // approved by name
+                '"' . ($row->approved->name ?? '-') . '"',
+
+                // recharge date
+                '"' . $formattedDate . '"',
+
+                // recharge amount
+                '"' . (optional($row->recharge)->amount ?? '-') . '"',
+
+                // final status
+                '"' . ($row->recharge ? 'Recharged' : (str_contains($row->status, 'reject') ? 'Rejected' : 'Pending')) . '"',
             ]) . "\n";
         }
+
 
         $filename = 'recharge-list-' . now()->format('Y-m-d') . '.csv';
 
@@ -221,6 +239,4 @@ class Rechargelist extends Component
             ['Content-Type' => 'text/csv']
         );
     }
-
-
 }

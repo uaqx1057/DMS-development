@@ -13,7 +13,7 @@
                             <!-- Driver -->
                             <x-ui.col class="mb-3 col-lg-6 col-md-6">
                                 <x-form.label for="driver" name="Driver" :required="true" />
-                               <x-form.select id="driver" wire:model="driver">
+                               <x-form.select id="driver" wire:model.live="driver">
                                     <option value="">--select driver--</option>
                                     @foreach ($drivers  as $driver)
                                             <option value="{{ $driver->id }}">{{ $driver->name }}</option>
@@ -59,4 +59,20 @@
             </form>
         </x-ui.col>
     </x-ui.row>
+
+    @if ($selectedDriver)
+    <x-table
+        :columns="$columns"
+        :page="$page"
+        :perPage="$perPage"
+        :items="$requestRecharges"
+        :sortColumn="$sortColumn"
+        :sortDirection="$sortDirection"
+        isModalEdit="true"
+        routeEdit="booklet.edit"
+        :edit_permission="$edit_permission"
+        :rechargePermission="true"
+        :createRechargeDriver="true"
+    />
+    @endif
 </div>
