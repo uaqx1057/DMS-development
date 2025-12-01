@@ -24,7 +24,7 @@
                 <div class="modal-footer">
                     <button class="btn btn-secondary" wire:click="$set('showRejectModal', false)">Close</button>
 
-                    <button class="btn btn-danger" wire:click="submitReject" wire:loading.attr="disabled">
+                    <button class="btn btn-success" wire:click="submitReject" wire:loading.attr="disabled">
                         <!-- Spinner shows only while submitReject is running -->
                         <span wire:loading wire:target="submitReject" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                         Submit Rejection

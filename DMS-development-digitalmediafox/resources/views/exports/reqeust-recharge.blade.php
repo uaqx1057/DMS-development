@@ -36,8 +36,9 @@
                     <td>{{ $request->driver_branch }}</td> 
                     <td>{{ $request->mobile }}</td> 
                     <td>{{ $request->opearator }}</td> 
-                    <td>{{ $request->status }}</td>
+                    <td>{{ ucfirst($request->status) }} <br> {{ $request->status == 'rejected' ? 'Rejected Reason: ' . $request->reason : '' }}</td>
                     <td>{{ $request->user->name }}</td>
+                    <td>{{ $request->dateTime }}</td>
                     
                 </tr>
             @endforeach

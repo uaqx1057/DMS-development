@@ -1,4 +1,4 @@
-    @props(['items', 'columns', 'page', 'perPage', 'isModalEdit' => false, 'routeEdit'=> null, 'routeView' => null, 'isModalRole' => false, 'routeRole'=> null, 'edit_permission' => false, 'showModal' => false, 'isModalView' => false, 'delete_booklet' => false, 'rechargePermission' => false, 'createRechargeDriver' => false])
+    @props(['items', 'columns', 'page', 'perPage', 'isModalEdit' => false, 'routeEdit'=> null, 'routeView' => null, 'isModalRole' => false, 'routeRole'=> null, 'edit_permission' => false, 'showModal' => false, 'isModalView' => false, 'delete_booklet' => false, 'rechargePermission' => false,'rechargeLog' => false, 'createRechargeDriver' => false])
 
     <tbody>
         @if ($items->isEmpty())
@@ -27,6 +27,7 @@
             :delete_booklet="$delete_booklet"
             :rechargePermission="$rechargePermission"
             :createRechargeDriver="$createRechargeDriver"
+            :rechargeLog="$rechargeLog"
         />
         @endforeach
 

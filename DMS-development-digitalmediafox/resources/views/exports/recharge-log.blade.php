@@ -58,12 +58,8 @@
                     <td>{{ $request->driver_branch }}</td>
                     <td>{{ $request->mobile }}</td>
                     <td>{{ $request->opearator }}</td>
-                    <td>{{ $request->status }}</td>
-
-                    <td>{{ $request->user->name ?? '-' }}</td>
-                    <td>{{ $request->approved->name ?? '-' }}</td>
-
-                    <td>{{ $request->recharge->date ?? '-' }}</td>
+                    <td>{{ ucfirst($request->status) }}</td>
+                    <td>{!! $request->report !!}</td>
                     <td>{{ $request->recharge->amount ?? '-' }}</td>
 
                     <td>{{ $request->recharge ? 'Recharged' : (str_contains($request->status, 'reject') ? 'Rejected' : 'Pending') }}</td>

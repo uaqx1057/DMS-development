@@ -53,6 +53,7 @@ class RequestRechargeList extends Component
             ['label' => 'Phone No.', 'column' => 'mobile', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Opearator', 'column' => 'opearator', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Requested By', 'column' => 'user', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'name'],
+            ['label' => 'Date and Time', 'column' => 'dateTime', 'isData' => true, 'hasRelation' => false],
         ];
 
         if (auth()->user()->role_id == 8) {
@@ -70,7 +71,7 @@ class RequestRechargeList extends Component
 
         $query = RequestRecharge::with(['driver', 'user']);
 
-         $query->when(auth()->user()->role_id != 1, function ($query) {
+         $query->when(auth()->user()->role_id == 8, function ($query) {
                 $query->whereHas('driver', function ($q) {
                     $q->where('branch_id', auth()->user()->branch_id);
                 });
@@ -100,6 +101,7 @@ class RequestRechargeList extends Component
         $requestRecharges->getCollection()->transform(function ($recharge) {
             $recharge->driver_with_iqama = $recharge->driver->name . '(' . $recharge->driver->iqaama_number . ')';
             $recharge->driver_branch = $recharge->driver->branch->name ?? '';
+            $recharge->dateTime = $recharge->created_at->format('d M Y H:i:s' );
             return $recharge;
         });
 
@@ -130,7 +132,7 @@ class RequestRechargeList extends Component
             Mail::to($email)->queue(new AcceptRechargeMail($driverData, $opManager, $requestRecharge));
         }
 
-        session()->flash('success', __('Recharge request has been reviewed and Accept.'));
+        session()->flash('success', __('Recharge request has been reviewed and Accepted.'));
     }
 
     public function reject($id)
@@ -145,7 +147,7 @@ class RequestRechargeList extends Component
         $this->validate();
         $requestRecharge = RequestRecharge::find($this->selectedId);
         if ($requestRecharge) {
-            RequestRecharge::where('id', $this->selectedId)->update(['status' => 'rejected', 'approved_by' => auth()->user()->id]);
+            RequestRecharge::where('id', $this->selectedId)->update(['status' => 'rejected', 'reason' => $this->reject_reason, 'approved_by' => auth()->user()->id]);
         }
 
         $driverData = Driver::with('branch')->where('id', $requestRecharge->driver_id)->first();
@@ -160,7 +162,7 @@ class RequestRechargeList extends Component
         $this->showRejectModal = false;
         $this->reject_reason = '';
 
-        session()->flash('success', __('Recharge request has been reviewed and has been rejected'));
+        session()->flash('success', __('Recharge request has been reviewed and Rejected'));
     }
 
     public function exportPdf()
@@ -172,12 +174,13 @@ class RequestRechargeList extends Component
             ['label' => 'Phone No.', 'column' => 'mobile'],
             ['label' => 'Opearator', 'column' => 'opearator'],
             ['label' => 'Status', 'column' => 'status'],
-            ['label' => 'Requested By', 'column' => 'user']
+            ['label' => 'Requested By', 'column' => 'user'],
+            ['label' => 'Date and Time', 'column' => 'opearator'],
         ];
 
         $query = RequestRecharge::with(['driver', 'user']);
 
-        $query = $query->when(auth()->user()->role_id != 1, function ($query) {
+        $query = $query->when(auth()->user()->role_id == 8, function ($query) {
                 $query->whereHas('driver', function ($q) {
                     $q->where('branch_id', auth()->user()->branch_id);
                 });
@@ -200,9 +203,10 @@ class RequestRechargeList extends Component
         }
 
         // Final result
-        $requestRecharges = $query->get()->transform(function ($recharge) {
+        $requestRecharges = $query->orderBy('id', 'desc')->get()->transform(function ($recharge) {
             $recharge->driver_with_iqama = $recharge->driver->name . '(' . $recharge->driver->iqaama_number . ')';
             $recharge->driver_branch = $recharge->driver->branch->name ?? '';
+            $recharge->dateTime = $recharge->created_at->format('d M Y H:i:s' );
             return $recharge;
             });
 
@@ -228,15 +232,16 @@ class RequestRechargeList extends Component
             'Driver',
             'Branch',
             'Phone No',
-            'Opearator',
+            'Operator',
             'Status',
             'Requested By',
+            'Date and Time',
         ];
 
         $query = RequestRecharge::with(['driver', 'user']);
 
         // Branch Filter
-        $query = $query->when(auth()->user()->role_id != 1, function ($query) {
+        $query = $query->when(auth()->user()->role_id == 8, function ($query) {
             $query->whereHas('driver', function ($q) {
                 $q->where('branch_id', auth()->user()->branch_id);
             });
@@ -260,33 +265,42 @@ class RequestRechargeList extends Component
         }
 
         // Final result transformation
-        $requestRecharges = $query->get()->transform(function ($recharge) {
+        $requestRecharges = $query->orderBy('id', 'desc')->get()->transform(function ($recharge) {
             $recharge->driver_with_iqama = $recharge->driver->name . '(' . $recharge->driver->iqaama_number . ')';
             $recharge->driver_branch = $recharge->driver->branch->name ?? '';
+            $recharge->dateTime = $recharge->created_at->format('d M Y H:i:s');
             return $recharge;
         });
 
-        // Build CSV data
-        $csvData = implode(',', $headers) . "\n"; // header row
-
-        foreach ($requestRecharges as $row) {
-            $csvData .= implode(',', [
-                $row->driver_with_iqama,
-                $row->driver_branch,
-                $row->mobile,
-                $row->opearator,
-                $row->status,
-                $row->user->name,
-            ]) . "\n";
-        }
-
         $filename = 'request-recharge-list-' . now()->format('Y-m-d') . '.csv';
 
-        return response()->streamDownload(
-            fn () => print($csvData),
-            $filename,
-            ['Content-Type' => 'text/csv']
-        );
+        return response()->streamDownload(function () use ($requestRecharges, $headers) {
+            $handle = fopen('php://output', 'w');
+            
+            // Add UTF-8 BOM for proper Excel encoding
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            // Write headers
+            fputcsv($handle, $headers);
+            
+            // Write data rows
+            foreach ($requestRecharges as $row) {
+                fputcsv($handle, [
+                    $row->driver_with_iqama,
+                    $row->driver_branch,
+                    $row->mobile,
+                    $row->opearator,
+                    ucfirst($row->status),
+                    $row->user->name,
+                    $row->dateTime,
+                ]);
+            }
+            
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 
 }

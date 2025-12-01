@@ -35,11 +35,9 @@
                     <td>{{ $request->driver_with_iqama }}</td> 
                     <td>{{ $request->driver_branch }}</td> 
                     <td>{{ $request->mobile }}</td> 
-                    <td>{{ $request->opearator }}</td> 
-                    <td>{{ $request->approved->name }}</td>
-                    <td>{{ $request->recharge->date }}</td>
-                    <td>{{ $request->recharge->amount }}</td>
-                    {{-- <td>{{ $request->recharge->image }}</td> --}}
+                    <td>{{ $request->opearator }}</td>
+                    <td>{!! $request->report !!}</td>
+                    <td>{{ isset($request->recharge) ? $request->recharge->amount : '-' }}</td>
                     <td>{{ $request->recharge ? 'Recharged' : 'Pending' }}</td>
                     
                 </tr>

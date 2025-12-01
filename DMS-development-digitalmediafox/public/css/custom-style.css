@@ -52,3 +52,7 @@ border-radius: 0px;
   }
 
  .active-menu{color:#00ffef!important;} 
+
+ .status-action{
+    width: fit-content !important;
+ }

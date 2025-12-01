@@ -22,7 +22,7 @@
                             <!-- Date -->
                             <x-ui.col class="mb-3 col-lg-6 col-md-6">
                                 <x-form.label for="date" name="Date" :required="true" />
-                                <x-form.input-date id="date" wire:model="date" max="{{ now()->toDateString() }}" />
+                                <x-form.input-date-time id="date" wire:model="date" max="{{ now()->toDateString() }}" />
                                 <x-ui.alert error="date" />
                             </x-ui.col>
 

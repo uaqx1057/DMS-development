@@ -12,6 +12,7 @@ class RequestRecharge extends Model
         'mobile',
         'opearator',
         'status',
+        'reason',
         'approved_by',
     ];
 

@@ -53,7 +53,7 @@ class CreateRecharge extends Component
         $this->validate([
             'amount' => 'required',
             'image' => 'required|mimetypes:image/*,application/pdf|max:2048',
-            'date' => 'required|date|before_or_equal:today',
+            'date' => 'required|date|before_or_equal:now',
         ]);
 
         $requestRecharge = RequestRecharge::find($this->request_recharge_id);

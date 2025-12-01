@@ -19,7 +19,7 @@ return new class extends Migration
             $table->foreignIdFor(RequestRecharge::class);
             $table->foreignIdFor(User::class);
             $table->bigInteger('amount');
-            $table->date('date');
+            $table->dateTime('date');
             $table->text('image')->nullable();
             $table->timestamps();
         });

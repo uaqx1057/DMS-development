@@ -40,9 +40,10 @@ class RechargeLog extends Component
             ['label' => 'Phone No.', 'column' => 'mobile', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Opearator', 'column' => 'opearator', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Status', 'column' => 'status', 'isData' => false, 'hasRelation' => false],
-            ['label' => 'Requested By', 'column' => 'user', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'name'],
-            ['label' => 'Approved By', 'column' => 'approved', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'name'],
-            ['label' => 'Date', 'column' => 'recharge', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'date'],
+            // ['label' => 'Requested By', 'column' => 'user', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'name'],
+            // ['label' => 'Approved By', 'column' => 'approved', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'name'],
+            // ['label' => 'Date', 'column' => 'recharge', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'date'],
+            ['label' => 'Report', 'column' => 'report', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Amount', 'column' => 'recharge', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'amount'],
             ['label' => 'View', 'column' => 'recharge', 'isData' => false, 'hasRelation' => true, 'columnRelation' => 'image'],
             ['label' => 'Action', 'column' => 'driverRecharge', 'isData' => false, 'hasRelation' => false],
@@ -74,8 +75,23 @@ class RechargeLog extends Component
             ->paginate($this->perPage);
 
         $requestRecharges->getCollection()->transform(function ($recharge) {
+            // Driver 
             $recharge->driver_with_iqama = $recharge->driver->name . '(' . $recharge->driver->iqaama_number . ')';
             $recharge->driver_branch = $recharge->driver->branch->name ?? '';
+
+            // Status 
+            $status = $recharge->status == 'accepted' ? 'Approved By' : 'Rejected By';
+            // Requested By 
+            $recharge->requested_by = isset($recharge->user->name) ? 'Requested By:' . $recharge->user->name . ' at '. $recharge->created_at->format('d M Y H:i:s' ) . '<br>' : '';
+            // Approved/ Rejected By 
+            $recharge->approved_by = isset($recharge->approved->name) ? '' . $status . ':' . $recharge->approved->name . ' at '. $recharge->updated_at->format('d M Y H:i:s' )  . '<br>' : '';
+            // Recharged By
+            $recharge->recharged_by = isset($recharge->recharge) ? 'Recharged By:' .$recharge->recharge->user->name . ' at '. $recharge->recharge->created_at->format('d M Y H:i:s' ) . '<br>' : '';
+            // Reason
+            $recharge->reason = isset($recharge->reason) ? 'Reject Reason:' .$recharge->reason : '';
+
+            // Report 
+            $recharge->report = $recharge->requested_by . $recharge->approved_by . $recharge->recharged_by . $recharge->reason;
             return $recharge;
         });
         return view('livewire.dms.recharge.recharge-log', compact(
@@ -97,11 +113,8 @@ class RechargeLog extends Component
             ['label' => 'Phone No.', 'column' => 'mobile'],
             ['label' => 'Opearator', 'column' => 'opearator'],
             ['label' => 'Status', 'column' => 'status'],
-            ['label' => 'Requested By', 'column' => 'user'],
-            ['label' => 'Approved By', 'column' => 'approved'],
-            ['label' => 'Date', 'column' => 'recharge'],
+            ['label' => 'Report', 'column' => 'report'],
             ['label' => 'Amount', 'column' => 'recharge'],
-            // ['label' => 'View', 'column' => 'recharge'],
             ['label' => 'Process', 'column' => 'driverRecharge'],
         ];
 
@@ -125,11 +138,26 @@ class RechargeLog extends Component
         }
 
         // Final result
-        $requestRecharges = $query->get();
+        $requestRecharges = $query->orderBy('id', 'desc')->get();
 
         $requestRecharges->transform(function ($recharge) {
+            // Driver 
             $recharge->driver_with_iqama = $recharge->driver->name . '(' . $recharge->driver->iqaama_number . ')';
             $recharge->driver_branch = $recharge->driver->branch->name ?? '';
+
+            // Status 
+            $status = $recharge->status == 'accepted' ? 'Approved By' : 'Rejected By';
+            // Requested By 
+            $recharge->requested_by = isset($recharge->user->name) ? 'Requested By:' . $recharge->user->name . ' at '. $recharge->created_at->format('d M Y H:i:s' ) . '<br>' : '';
+            // Approved/ Rejected By 
+            $recharge->approved_by = isset($recharge->approved->name) ? '' . $status . ':' . $recharge->approved->name . ' at '. $recharge->updated_at->format('d M Y H:i:s' )  . '<br>' : '';
+            // Recharged By
+            $recharge->recharged_by = isset($recharge->recharge) ? 'Recharged By:' .$recharge->recharge->user->name . ' at '. $recharge->recharge->created_at->format('d M Y H:i:s' ) . '<br>' : '';
+            // Reason
+            $recharge->reason = isset($recharge->reason) ? 'Reject Reason:' .$recharge->reason : '';
+
+            // Report 
+            $recharge->report = $recharge->requested_by . $recharge->approved_by . $recharge->recharged_by . $recharge->reason;
             return $recharge;
         });
 
@@ -149,94 +177,118 @@ class RechargeLog extends Component
     }
 
     public function exportCsv()
-    {
-        // CSV Headers
-        $headers = [
-            'Driver',
-            'Branch',
-            'Phone No.',
-            'Opearator',
-            'Status',
-            'Requested By',
-            'Approved By',
-            'Date',
-            'Amount',
-            'Process',
-        ];
-
-        $query = RequestRecharge::with(['driver', 'user', 'recharge', 'approved']);
-
-        // Branch filter
-        // $query = $query->when(auth()->user()->role_id != 1, function ($query) {
-        //     $query->whereHas('driver', function ($q) {
-        //         $q->where('branch_id', auth()->user()->branch_id);
-        //     });
-        // });
-
-        // Search filter
+{
+    $fileName = 'recharge-log-' . now()->format('Y-m-d') . '.csv';
+    $headers = [
+        "Content-type"        => "text/csv",
+        "Content-Disposition" => "attachment; filename=$fileName",
+        "Pragma"              => "no-cache",
+        "Cache-Control"       => "must-revalidate, post-check=0, post-check=0",
+        "Expires"             => "0"
+    ];
+    
+    // CSV column headers
+    $columns = [
+        'Driver',
+        'Branch',
+        'Phone No.',
+        'Opearator',
+        'Status',
+        'Report',
+        'Amount',
+        'Process'
+    ];
+    
+    $callback = function () use ($columns) {
+        $file = fopen('php://output', 'w');
+        
+        // Write column header row
+        fputcsv($file, $columns);
+        
+        // Query
+        $query = RequestRecharge::with(['recharge', 'user', 'driver', 'approved']);
+        
+        // Apply Search
         if ($this->search) {
             $search = $this->search;
-
             $query->where(function ($q) use ($search) {
                 $q->whereHas('driver', function ($d) use ($search) {
                     $d->where('name', 'LIKE', "%{$search}%");
                 })
-                    ->orWhereHas('user', function ($u) use ($search) {
-                        $u->where('name', 'LIKE', "%{$search}%");
-                    })
-                    ->orWhere('status', 'LIKE', "%{$search}%")
-                    ->orWhere('mobile', 'LIKE', "%{$search}%")
-                    ->orWhere('opearator', 'LIKE', "%{$search}%");
+                ->orWhereHas('user', function ($u) use ($search) {
+                    $u->where('name', 'LIKE', "%{$search}%");
+                })
+                ->orWhere('status', 'LIKE', "%{$search}%")
+                ->orWhere('mobile', 'LIKE', "%{$search}%")
+                ->orWhere('opearator', 'LIKE', "%{$search}%");
             });
         }
-
-        // Final result transformation
-        $requestRecharges = $query->get()->transform(function ($recharge) {
+        
+        $requestRecharges = $query->orderBy('id', 'desc')->get();
+        
+        // Transform data
+        $requestRecharges->transform(function ($recharge) {
+            // Driver
             $recharge->driver_with_iqama = $recharge->driver->name . '(' . $recharge->driver->iqaama_number . ')';
             $recharge->driver_branch = $recharge->driver->branch->name ?? '';
+            
+            // Status
+            $status = $recharge->status == 'accepted' ? 'Approved By' : 'Rejected By';
+            
+            // Requested
+            $recharge->requested_by = isset($recharge->user->name)
+                ? "Requested By: {$recharge->user->name} at " . $recharge->created_at->format('d M Y H:i:s')
+                : '';
+            
+            // Approved/Rejected
+            $recharge->approved_by = isset($recharge->approved->name)
+                ? "{$status}: {$recharge->approved->name} at " . $recharge->updated_at->format('d M Y H:i:s')
+                : '';
+            
+            // Recharged
+            $recharge->recharged_by = isset($recharge->recharge)
+                ? "Recharged By: {$recharge->recharge->user->name} at " . $recharge->recharge->created_at->format('d M Y H:i:s')
+                : '';
+            
+            // Reject Reason
+            $recharge->reason = $recharge->reason
+                ? "Reject Reason: {$recharge->reason}"
+                : '';
+            
+            // Combine report (WITH line breaks for CSV)
+            $report = $recharge->requested_by . "\n" .
+                      $recharge->approved_by . "\n" .
+                      $recharge->recharged_by . "\n" .
+                      $recharge->reason;
+            
+            // Clean up while preserving line breaks
+            $lines = explode("\n", $report);
+            $cleanLines = array_map(function($line) {
+                return preg_replace('/\s+/', ' ', trim($line));
+            }, $lines);
+            $recharge->report = implode("\n", array_filter($cleanLines));
+            
             return $recharge;
         });
-
-        // Start CSV content
-        $csvData = implode(',', $headers) . "\n";
-
+        
+        // Write CSV rows
         foreach ($requestRecharges as $row) {
-
-            $formattedDate = optional($row->recharge)->date
-                ? \Carbon\Carbon::parse($row->recharge->date)->format('d-m-Y')
-                : '-';
-
-            $csvData .= implode(',', [
-                '"' . $row->driver_with_iqama . '"',
-                '"' . $row->driver_branch . '"',
-                '"' . ($row->mobile ?? '-') . '"',
-                '"' . ($row->opearator ?? '-') . '"',
-                '"' . ($row->status ?? '-') . '"',
-
-                // user name
-                '"' . ($row->user->name ?? '-') . '"',
-
-                // approved by name
-                '"' . ($row->approved->name ?? '-') . '"',
-
-                // recharge date
-                '"' . $formattedDate . '"',
-
-                // recharge amount
-                '"' . (optional($row->recharge)->amount ?? '-') . '"',
-
-                // final status
-                '"' . ($row->recharge ? 'Recharged' : (str_contains($row->status, 'reject') ? 'Rejected' : 'Pending')) . '"',
-            ]) . "\n";
+            fputcsv($file, [
+                $row->driver_with_iqama,
+                $row->driver_branch,
+                $row->mobile,
+                $row->opearator,
+                ucfirst($row->status),
+                $row->report,
+                $row->recharge->amount ?? '-',
+                $row->recharge ? 'Recharged' : (str_contains($row->status, 'reject') ? 'Rejected' : 'Pending'),
+            ]);
         }
+        
+        fclose($file);
+    };
+    
+    return response()->stream($callback, 200, $headers);
+}
 
-
-        $filename = 'recharge-list-' . now()->format('Y-m-d') . '.csv';
-
-        return response()->streamDownload(
-            fn() => print ($csvData),
-            $filename,
-            ['Content-Type' => 'text/csv']
-        );
-    }
 }

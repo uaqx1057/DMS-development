@@ -15,7 +15,8 @@
     'showModal' => false,
     'rechargePermission' => false,
     'isModalView' => false,
-    'createRechargeDriver' => false
+    'createRechargeDriver' => false,
+    'rechargeLog' => false
 ])
 
 <div class="card">
@@ -60,6 +61,7 @@
                 :delete_booklet="$delete_booklet"
                 :rechargePermission="$rechargePermission"
                 :createRechargeDriver="$createRechargeDriver"
+                :rechargeLog="$rechargeLog"
             />
         </table>
     </div>

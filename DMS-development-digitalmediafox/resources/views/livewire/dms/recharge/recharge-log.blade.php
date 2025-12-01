@@ -22,7 +22,7 @@
                         routeEdit="booklet.edit"
                         :edit_permission="$edit_permission"
                         :rechargePermission="true"
-                        :createRechargeDriver="true"
+                        :rechargeLog="true"
                     />
                 </x-ui.card-body>
             </x-ui.card>

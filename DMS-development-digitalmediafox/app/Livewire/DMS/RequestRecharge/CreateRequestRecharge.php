@@ -62,9 +62,7 @@ class CreateRequestRecharge extends Component
             ['label' => 'Phone No.', 'column' => 'mobile', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Opearator', 'column' => 'opearator', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Status', 'column' => 'status', 'isData' => false, 'hasRelation' => false],
-            ['label' => 'Requested By', 'column' => 'user', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'name'],
-            ['label' => 'Approved By', 'column' => 'approved', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'name'],
-            ['label' => 'Date', 'column' => 'recharge', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'date'],
+            ['label' => 'Report', 'column' => 'report', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Amount', 'column' => 'recharge', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'amount'],
             ['label' => 'View', 'column' => 'recharge', 'isData' => false, 'hasRelation' => true, 'columnRelation' => 'image'],
         ];
@@ -92,14 +90,32 @@ class CreateRequestRecharge extends Component
             });
         }
 
+        if(!$this->selectedDriver){
+            $query = $query->limit(1);
+        }
         // Final result
         $requestRecharges = $query
             ->orderBy($this->sortColumn, $this->sortDirection)
             ->paginate($this->perPage);
 
         $requestRecharges->getCollection()->transform(function ($recharge) {
+            // Driver 
             $recharge->driver_with_iqama = $recharge->driver->name . '(' . $recharge->driver->iqaama_number . ')';
-            $recharge->driver_branch = $recharge->driver->branch->name;
+            $recharge->driver_branch = $recharge->driver->branch->name ?? '';
+
+            // Status 
+            $status = $recharge->status == 'accepted' ? 'Approved By' : 'Rejected By';
+            // Requested By 
+            $recharge->requested_by = isset($recharge->user->name) ? 'Requested By: ' . $recharge->user->name . ' at '. $recharge->created_at->format('d M Y H:i:s' ) . '<br>' : '';
+            // Approved/ Rejected By 
+            $recharge->approved_by = isset($recharge->approved->name) ? '' . $status . ': ' . $recharge->approved->name . ' at '. $recharge->updated_at->format('d M Y H:i:s' )  . '<br>' : '';
+            // Recharged By
+            $recharge->recharged_by = isset($recharge->recharge) ? 'Recharged By: ' .$recharge->recharge->user->name . ' at '. $recharge->recharge->created_at->format('d M Y H:i:s' ) . '<br>' : '';
+            // Reason
+            $recharge->reason = isset($recharge->reason) ? 'Reject Reason: ' .$recharge->reason : '';
+
+            // Report 
+            $recharge->report = $recharge->requested_by . $recharge->approved_by . $recharge->recharged_by . $recharge->reason;
             return $recharge;
         });
 

@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('mobile')->nullable();
             $table->string('opearator')->nullable();
             $table->string('status')->nullable();
+            $table->text('reason')->nullable();
             $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
         });
