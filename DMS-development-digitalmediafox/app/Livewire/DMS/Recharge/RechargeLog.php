@@ -5,6 +5,8 @@ namespace App\Livewire\DMS\Recharge;
 use App\Models\RequestRecharge;
 use App\Traits\DataTableTrait;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class RechargeLog extends Component
@@ -12,6 +14,9 @@ class RechargeLog extends Component
     use DataTableTrait;
     private string $main_menu = 'Log';
     private string $menu = 'Recharge Log';
+    public $status;
+    public $start_date;
+    public $end_date;
 
     public function mount()
     {
@@ -25,6 +30,18 @@ class RechargeLog extends Component
         if (session()->has('page')) {
             $this->page = session('page');
         }
+    }
+
+    public function updatedStatus($selectStatus)
+    {
+        $this->status = $selectStatus;
+    }
+
+    #[On('dateRangeSelected')]
+    public function updatedDateRange($start, $end)
+    {
+        $this->start_date = $start;
+        $this->end_date = $end;
     }
 
     public function render()
@@ -46,12 +63,37 @@ class RechargeLog extends Component
             ['label' => 'Report', 'column' => 'report', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Amount', 'column' => 'recharge', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'amount'],
             ['label' => 'View', 'column' => 'recharge', 'isData' => false, 'hasRelation' => true, 'columnRelation' => 'image'],
-            ['label' => 'Action', 'column' => 'driverRecharge', 'isData' => false, 'hasRelation' => false],
+            ['label' => 'Recharged Status', 'column' => 'driverRecharge', 'isData' => false, 'hasRelation' => false],
         ];
 
 
         $query = RequestRecharge::with(['recharge', 'user', 'driver', 'approved']);
 
+        if ($this->status) {
+            logger($this->status);
+            if ($this->status === 'Recharged') {
+                // recharge count = 0
+                $query->has('recharge');
+            } elseif($this->status === 'PendingRecharged') {
+                $query = $query->where('status', 'Accepted')->doesntHave('recharge');
+            } else {
+                $query = $query->where('status', $this->status);
+            }
+        }
+
+        if ($this->start_date && $this->end_date) {
+            $start = Carbon::parse($this->start_date)->startOfDay();
+            $end   = Carbon::parse($this->end_date)->endOfDay();
+
+            $query = $query->where(function ($q) use ($start, $end) {
+                $q->whereBetween('created_at', [$start, $end])
+                ->orWhereBetween('updated_at', [$start, $end])
+                ->orWhereHas('recharge', function ($subQ) use ($start, $end) {
+                    $subQ->whereBetween('date', [$start, $end]);
+                });
+            });
+        }
+        
         // Apply search if not empty
         if ($this->search) {
             $search = $this->search;
@@ -80,13 +122,13 @@ class RechargeLog extends Component
             $recharge->driver_branch = $recharge->driver->branch->name ?? '';
 
             // Status 
-            $status = $recharge->status == 'accepted' ? 'Approved By' : 'Rejected By';
+            $status = $recharge->status == 'Accepted' ? 'Approved By' : 'Rejected By';
             // Requested By 
             $recharge->requested_by = isset($recharge->user->name) ? 'Requested By:' . $recharge->user->name . ' at '. $recharge->created_at->format('d M Y H:i:s' ) . '<br>' : '';
             // Approved/ Rejected By 
             $recharge->approved_by = isset($recharge->approved->name) ? '' . $status . ':' . $recharge->approved->name . ' at '. $recharge->updated_at->format('d M Y H:i:s' )  . '<br>' : '';
             // Recharged By
-            $recharge->recharged_by = isset($recharge->recharge) ? 'Recharged By:' .$recharge->recharge->user->name . ' at '. $recharge->recharge->created_at->format('d M Y H:i:s' ) . '<br>' : '';
+            $recharge->recharged_by = isset($recharge->recharge) ? 'Recharged By:' .$recharge->recharge->user->name . ' at '. $recharge->recharge->date->format('d M Y H:i:s' ) . '<br>' : '';
             // Reason
             $recharge->reason = isset($recharge->reason) ? 'Reject Reason:' .$recharge->reason : '';
 
@@ -119,7 +161,30 @@ class RechargeLog extends Component
         ];
 
         $query = RequestRecharge::with(['recharge', 'user', 'driver', 'approved']);
+        
+        if ($this->status) {
+            if ($this->status === 'Recharged') {
+                // recharge count = 0
+                $query->has('recharge');
+            } elseif($this->status === 'PendingRecharged') {
+                $query = $query->where('status', 'Accepted')->doesntHave('recharge');
+            } else {
+                $query = $query->where('status', $this->status);
+            }
+        }
 
+        if ($this->start_date && $this->end_date) {
+            $start = Carbon::parse($this->start_date)->startOfDay();
+            $end   = Carbon::parse($this->end_date)->endOfDay();
+
+            $query = $query->where(function ($q) use ($start, $end) {
+                $q->whereBetween('created_at', [$start, $end])
+                ->orWhereBetween('updated_at', [$start, $end])
+                ->orWhereHas('recharge', function ($subQ) use ($start, $end) {
+                    $subQ->whereBetween('date', [$start, $end]);
+                });
+            });
+        }
         // Apply search if not empty
         if ($this->search) {
             $search = $this->search;
@@ -146,13 +211,13 @@ class RechargeLog extends Component
             $recharge->driver_branch = $recharge->driver->branch->name ?? '';
 
             // Status 
-            $status = $recharge->status == 'accepted' ? 'Approved By' : 'Rejected By';
+            $status = $recharge->status == 'Accepted' ? 'Approved By' : 'Rejected By';
             // Requested By 
             $recharge->requested_by = isset($recharge->user->name) ? 'Requested By:' . $recharge->user->name . ' at '. $recharge->created_at->format('d M Y H:i:s' ) . '<br>' : '';
             // Approved/ Rejected By 
             $recharge->approved_by = isset($recharge->approved->name) ? '' . $status . ':' . $recharge->approved->name . ' at '. $recharge->updated_at->format('d M Y H:i:s' )  . '<br>' : '';
             // Recharged By
-            $recharge->recharged_by = isset($recharge->recharge) ? 'Recharged By:' .$recharge->recharge->user->name . ' at '. $recharge->recharge->created_at->format('d M Y H:i:s' ) . '<br>' : '';
+            $recharge->recharged_by = isset($recharge->recharge) ? 'Recharged By:' .$recharge->recharge->user->name . ' at '. $recharge->recharge->date->format('d M Y H:i:s' ) . '<br>' : '';
             // Reason
             $recharge->reason = isset($recharge->reason) ? 'Reject Reason:' .$recharge->reason : '';
 
@@ -208,6 +273,29 @@ class RechargeLog extends Component
         // Query
         $query = RequestRecharge::with(['recharge', 'user', 'driver', 'approved']);
         
+        if ($this->status) {
+            if ($this->status === 'Recharged') {
+                // recharge count = 0
+                $query->has('recharge');
+            } elseif($this->status === 'PendingRecharged') {
+                $query = $query->where('status', 'Accepted')->doesntHave('recharge');
+            } else {
+                $query = $query->where('status', $this->status);
+            }
+        }
+
+        if ($this->start_date && $this->end_date) {
+            $start = Carbon::parse($this->start_date)->startOfDay();
+            $end   = Carbon::parse($this->end_date)->endOfDay();
+
+            $query = $query->where(function ($q) use ($start, $end) {
+                $q->whereBetween('created_at', [$start, $end])
+                ->orWhereBetween('updated_at', [$start, $end])
+                ->orWhereHas('recharge', function ($subQ) use ($start, $end) {
+                    $subQ->whereBetween('date', [$start, $end]);
+                });
+            });
+        }
         // Apply Search
         if ($this->search) {
             $search = $this->search;
@@ -233,7 +321,7 @@ class RechargeLog extends Component
             $recharge->driver_branch = $recharge->driver->branch->name ?? '';
             
             // Status
-            $status = $recharge->status == 'accepted' ? 'Approved By' : 'Rejected By';
+            $status = $recharge->status == 'Accepted' ? 'Approved By' : 'Rejected By';
             
             // Requested
             $recharge->requested_by = isset($recharge->user->name)
@@ -247,7 +335,7 @@ class RechargeLog extends Component
             
             // Recharged
             $recharge->recharged_by = isset($recharge->recharge)
-                ? "Recharged By: {$recharge->recharge->user->name} at " . $recharge->recharge->created_at->format('d M Y H:i:s')
+                ? "Recharged By: {$recharge->recharge->user->name} at " . $recharge->recharge->date->format('d M Y H:i:s')
                 : '';
             
             // Reject Reason
@@ -281,7 +369,7 @@ class RechargeLog extends Component
                 ucfirst($row->status),
                 $row->report,
                 $row->recharge->amount ?? '-',
-                $row->recharge ? 'Recharged' : (str_contains($row->status, 'reject') ? 'Rejected' : 'Pending'),
+                $row->recharge ? 'Recharged' : (str_contains($row->status, 'Rejected') ? 'Rejected' : 'Pending'),
             ]);
         }
         

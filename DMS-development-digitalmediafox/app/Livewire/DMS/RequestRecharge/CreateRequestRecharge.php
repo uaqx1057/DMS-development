@@ -110,7 +110,7 @@ class CreateRequestRecharge extends Component
             // Approved/ Rejected By 
             $recharge->approved_by = isset($recharge->approved->name) ? '' . $status . ': ' . $recharge->approved->name . ' at '. $recharge->updated_at->format('d M Y H:i:s' )  . '<br>' : '';
             // Recharged By
-            $recharge->recharged_by = isset($recharge->recharge) ? 'Recharged By: ' .$recharge->recharge->user->name . ' at '. $recharge->recharge->created_at->format('d M Y H:i:s' ) . '<br>' : '';
+            $recharge->recharged_by = isset($recharge->recharge) ? 'Recharged By: ' .$recharge->recharge->user->name . ' at '. $recharge->recharge->date->format('d M Y H:i:s' ) . '<br>' : '';
             // Reason
             $recharge->reason = isset($recharge->reason) ? 'Reject Reason: ' .$recharge->reason : '';
 
@@ -147,7 +147,7 @@ class CreateRequestRecharge extends Component
             'user_id' => auth()->user()->id,
             'mobile' => $this->phone_number,
             'opearator' => $this->operator,
-            'status' => 'pending',
+            'status' => 'Pending',
         ]);
 
         $driverData = Driver::with('branch')->where('id', $this->driver)->first();

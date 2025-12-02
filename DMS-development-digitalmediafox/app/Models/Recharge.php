@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Recharge extends Model
 {
+    protected $casts = [
+        'date' => 'datetime',
+    ];
     protected $fillable = [
         'request_recharge_id',
         'user_id',

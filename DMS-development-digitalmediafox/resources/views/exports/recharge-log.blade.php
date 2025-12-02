@@ -62,7 +62,7 @@
                     <td>{!! $request->report !!}</td>
                     <td>{{ $request->recharge->amount ?? '-' }}</td>
 
-                    <td>{{ $request->recharge ? 'Recharged' : (str_contains($request->status, 'reject') ? 'Rejected' : 'Pending') }}</td>
+                    <td>{{ $request->recharge ? 'Recharged' : (str_contains($request->status, 'Rejected') ? 'Rejected' : 'Pending') }}</td>
                 </tr>
             @endforeach
 

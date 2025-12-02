@@ -29,9 +29,9 @@
         @elseif ($column['column'] == 'status')
             @if (auth()->user()->role_id == 8 || $createRechargeDriver || $rechargeLog)    
                 <p class="fw-normal fs-6 badge rounded-pill 
-                    {{ str_contains($item->status, 'pending') ? 'text-bg-primary' : 
-                    (str_contains($item->status, 'accept') ? 'text-bg-success' : 
-                    (str_contains($item->status, 'reject') ? 'text-bg-danger' : 'text-bg-secondary')) 
+                    {{ str_contains($item->status, 'Pending') ? 'text-bg-primary' : 
+                    (str_contains($item->status, 'Accepted') ? 'text-bg-success' : 
+                    (str_contains($item->status, 'Rejected') ? 'text-bg-danger' : 'text-bg-secondary')) 
                     }}">
                     {{ ucfirst($item->status) }}
                 </p>
@@ -72,7 +72,7 @@
             <div class="flex items-center justify-center gap-1">
                 <div class="dropdown d-inline-block">
                     @if ($rechargePermission)
-                        @if ($item->status == 'pending')
+                        @if ($item->status == 'Pending')
                             <button class="btn btn-soft-secondary btn-sm dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="align-middle ri-more-fill"></i>
                             </button>
@@ -80,9 +80,9 @@
                             <div class="d-flex flex-column">
                                 <div class="w-100 text-center">
                                     <p class="status-action badge fw-normal fs-6 rounded-pill 
-                                        {{ str_contains($item->status, 'pending') ? 'text-bg-warning' : 
-                                        (str_contains($item->status, 'accept') ? 'text-bg-success' : 
-                                        (str_contains($item->status, 'reject') ? 'text-bg-danger' : 'text-bg-secondary')) 
+                                        {{ str_contains($item->status, 'Pending') ? 'text-bg-warning' : 
+                                        (str_contains($item->status, 'Accepted') ? 'text-bg-success' : 
+                                        (str_contains($item->status, 'Rejected') ? 'text-bg-danger' : 'text-bg-secondary')) 
                                         }}">
                                         {{ ucfirst($item->status) }}
                                     </p>
@@ -167,7 +167,7 @@
                 <p class="badge fw-normal fs-6 rounded-pill text-bg-info">Recharged</p>
             @else
                 @if ($createRechargeDriver || $rechargeLog)
-                    <p class="badge fw-normal fs-6 {{ str_contains($item->status, 'reject') ? 'text-bg-danger' : 'text-bg-primary' }}">{{ str_contains($item->status, 'reject') ? 'Rejected' : 'Pending' }}</p>
+                    <p class="badge rounded-pill fw-normal fs-6 {{ str_contains($item->status, 'Rejected') ? 'text-bg-danger' : 'text-bg-primary' }}">{{ str_contains($item->status, 'Rejected') ? 'Rejected' : 'Pending' }}</p>
                 @else
                 <a href="{{ route('recharge.create', $item->id) }}"
                 wire:navigate 

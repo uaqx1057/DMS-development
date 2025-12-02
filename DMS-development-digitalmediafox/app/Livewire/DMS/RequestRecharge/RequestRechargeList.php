@@ -9,17 +9,24 @@ use App\Models\RequestRecharge;
 use App\Models\User;
 use App\Traits\DataTableTrait;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class RequestRechargeList extends Component
 {
+    public $branch_id, $date_range;
+
     use DataTableTrait;
 
     private string $main_menu = 'Recharge';
     private string $menu = 'Request Recharge List';
 
     public $selectedId;
+    public $status;
+    public $start_date;
+    public $end_date;
     public $reject_reason;
     public $showRejectModal = false;
 
@@ -39,6 +46,18 @@ class RequestRechargeList extends Component
         if (session()->has('page')) {
             $this->page = session('page');
         }
+    }
+
+    public function updatedStatus($selectStatus)
+    {
+        $this->status = $selectStatus;
+    }
+
+    #[On('dateRangeSelected')]
+    public function updatedDateRange($start, $end)
+    {
+        $this->start_date = $start;
+        $this->end_date = $end;
     }
     public function render()
     {
@@ -70,6 +89,18 @@ class RequestRechargeList extends Component
         }
 
         $query = RequestRecharge::with(['driver', 'user']);
+
+        // filter with Status 
+        if($this->status){
+            $query = $query->where('status', $this->status);
+        }
+
+        if($this->start_date && $this->end_date){
+            $query = $query->whereBetween('created_at', [
+                Carbon::parse($this->start_date)->startOfDay(),
+                Carbon::parse($this->end_date)->endOfDay(),
+            ]);
+        }
 
          $query->when(auth()->user()->role_id == 8, function ($query) {
                 $query->whereHas('driver', function ($q) {
@@ -120,7 +151,7 @@ class RequestRechargeList extends Component
     {
         $requestRecharge = RequestRecharge::find($id);
         if ($requestRecharge) {
-            RequestRecharge::where('id', $id)->update(['status' => 'accepted', 'approved_by' => auth()->user()->id]);
+            RequestRecharge::where('id', $id)->update(['status' => 'Accepted', 'approved_by' => auth()->user()->id]);
         }
 
         $driverData = Driver::with('branch')->where('id', $requestRecharge->driver_id)->first();
@@ -147,7 +178,7 @@ class RequestRechargeList extends Component
         $this->validate();
         $requestRecharge = RequestRecharge::find($this->selectedId);
         if ($requestRecharge) {
-            RequestRecharge::where('id', $this->selectedId)->update(['status' => 'rejected', 'reason' => $this->reject_reason, 'approved_by' => auth()->user()->id]);
+            RequestRecharge::where('id', $this->selectedId)->update(['status' => 'Rejected', 'reason' => $this->reject_reason, 'approved_by' => auth()->user()->id]);
         }
 
         $driverData = Driver::with('branch')->where('id', $requestRecharge->driver_id)->first();
@@ -179,6 +210,17 @@ class RequestRechargeList extends Component
         ];
 
         $query = RequestRecharge::with(['driver', 'user']);
+        
+        if($this->status){
+            $query = $query->where('status', $this->status);
+        }
+
+        if($this->start_date && $this->end_date){
+            $query = $query->whereBetween('created_at', [
+                Carbon::parse($this->start_date)->startOfDay(),
+                Carbon::parse($this->end_date)->endOfDay(),
+            ]);
+        }
 
         $query = $query->when(auth()->user()->role_id == 8, function ($query) {
                 $query->whereHas('driver', function ($q) {
@@ -239,6 +281,17 @@ class RequestRechargeList extends Component
         ];
 
         $query = RequestRecharge::with(['driver', 'user']);
+
+        if($this->status){
+            $query = $query->where('status', $this->status);
+        }
+
+        if($this->start_date && $this->end_date){
+            $query = $query->whereBetween('created_at', [
+                Carbon::parse($this->start_date)->startOfDay(),
+                Carbon::parse($this->end_date)->endOfDay(),
+            ]);
+        }
 
         // Branch Filter
         $query = $query->when(auth()->user()->role_id == 8, function ($query) {

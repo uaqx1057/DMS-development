@@ -33,7 +33,7 @@ class CreateRecharge extends Component
     public function render()
     {
         $requestRecharge = RequestRecharge::find($this->request_recharge_id);
-        if ($requestRecharge->status !== 'accepted') {
+        if ($requestRecharge->status !== 'Accepted') {
             abort(404);
         }
 
