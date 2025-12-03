@@ -58,11 +58,10 @@
                     <td>{{ $request->driver_branch }}</td>
                     <td>{{ $request->mobile }}</td>
                     <td>{{ $request->opearator }}</td>
-                    <td>{{ ucfirst($request->status) }}</td>
+                    <td>{{ ucfirst($request->rechargeStatus)  }}</td>
                     <td>{!! $request->report !!}</td>
                     <td>{{ $request->recharge->amount ?? '-' }}</td>
 
-                    <td>{{ $request->recharge ? 'Recharged' : (str_contains($request->status, 'Rejected') ? 'Rejected' : 'Pending') }}</td>
                 </tr>
             @endforeach
 

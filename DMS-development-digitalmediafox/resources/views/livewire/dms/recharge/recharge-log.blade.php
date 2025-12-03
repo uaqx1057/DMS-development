@@ -23,7 +23,6 @@
                     <x-form.option value="Pending" name="Pending"/>
                     <x-form.option value="Accepted" name="Accepted"/>
                     <x-form.option value="Rejected" name="Rejected"/>
-                    <x-form.option value="PendingRecharged" name="Pending Recharge"/>
                     <x-form.option value="Recharged" name="Recharged"/>
                 </x-form.select>
                 <x-ui.alert error="status"/>

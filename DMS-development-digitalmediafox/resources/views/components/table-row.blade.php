@@ -27,7 +27,7 @@
                 <a href="{{ Storage::url('app/public/' . $item->penalty_file) }}" target="_blank" class="btn btn-sm btn-primary">View Proof</a>
             @endif
         @elseif ($column['column'] == 'status')
-            @if (auth()->user()->role_id == 8 || $createRechargeDriver || $rechargeLog)    
+            @if (auth()->user()->role_id == 8 || $createRechargeDriver)    
                 <p class="fw-normal fs-6 badge rounded-pill 
                     {{ str_contains($item->status, 'Pending') ? 'text-bg-primary' : 
                     (str_contains($item->status, 'Accepted') ? 'text-bg-success' : 
@@ -35,15 +35,21 @@
                     }}">
                     {{ ucfirst($item->status) }}
                 </p>
-                @if (isset($item->reason) && !$rechargeLog)
+                @if (isset($item->reason))
                     <p>Reject Reason:</>{{ $item->reason }}</p>
                 @endif
-            @endif
-        @elseif ($column['column'] == 'recharge')
-            @if(isset($item->recharge->image))
-                {{-- For Platform IDs Report - pass business_id_value --}}
-                <a href="{{ Storage::url('app/public/' . $item->recharge->image) }}" target="_blank" class="btn btn-sm btn-primary">View Proof</a>
-                {{-- <p>{{ $item->recharge->image }}</p> --}}
+            @elseif ($rechargeLog)
+                @if ($item->recharge)
+                    <p class="fw-normal fs-6 badge rounded-pill text-bg-info">Recharged</p>
+                @else
+                <p class="fw-normal fs-6 badge rounded-pill 
+                    {{ str_contains($item->status, 'Pending') ? 'text-bg-primary' : 
+                    (str_contains($item->status, 'Accepted') ? 'text-bg-success' : 
+                    (str_contains($item->status, 'Rejected') ? 'text-bg-danger' : 'text-bg-secondary')) 
+                    }}">
+                    {{ ucfirst($item->status) }}
+                </p>
+                @endif
             @endif
         @elseif ($column['column'] == 'receipt_image')
             @if(isset($item->receipt_image))
@@ -70,7 +76,7 @@
             @endif
         @elseif ($column['column'] === 'action')
             <div class="flex items-center justify-center gap-1">
-                <div class="dropdown d-inline-block">
+                <div class="dropdown d-inline-block" data-bs-auto-close="false">
                     @if ($rechargePermission)
                         @if ($item->status == 'Pending')
                             <button class="btn btn-soft-secondary btn-sm dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -139,11 +145,19 @@
                         @if ($rechargePermission)
                             @if ($item->status == 'pending')
                                 <button class="dropdown-item edit-item-btn"
-                                wire:click="accept({{ $item->id }})"
-                                {{-- onclick="return confirm('Are you sure you want to delete this booklet?')" --}}
-                                >
-                                    <i class="align-bottom ri-check-fill me-2 text-success fw-bold"></i>
+                                        wire:click.stop="accept({{ $item->id }})"
+                                        wire:loading.attr="disabled"
+                                        wire:target="accept">
+
+                                    <span wire:loading.remove wire:target="accept">
+                                        <i class="align-bottom ri-check-fill me-2 text-success fw-bold"></i>
                                         @translate('Accept')
+                                    </span>
+
+                                    <span wire:loading wire:target="accept">
+                                        <span class="spinner-border spinner-border-sm"></span>
+                                        Processing...
+                                    </span>
                                 </button>
                             @endif
                         @endif
@@ -164,14 +178,14 @@
             </div>
         @elseif ($column['column'] === 'driverRecharge')
             @if($item->recharge)
-                <p class="badge fw-normal fs-6 rounded-pill text-bg-info">Recharged</p>
+                <p class="">Recharged</p>
             @else
                 @if ($createRechargeDriver || $rechargeLog)
                     <p class="badge rounded-pill fw-normal fs-6 {{ str_contains($item->status, 'Rejected') ? 'text-bg-danger' : 'text-bg-primary' }}">{{ str_contains($item->status, 'Rejected') ? 'Rejected' : 'Pending' }}</p>
                 @else
                 <a href="{{ route('recharge.create', $item->id) }}"
                 wire:navigate 
-                class="btn btn-sm btn-primary">
+                class="btn btn-sm btn-success">
                     Recharge
                 </a>
                 @endif

@@ -32,22 +32,6 @@
                                 <x-form.input-file wire:model="image" accept="image/*,application/pdf" />
                                 <x-ui.alert error="image" />
                             </x-ui.col>
-
-                            <!-- Image Preview -->
-                            {{-- <x-ui.col class="mb-3 col-lg-6 col-md-6 d-flex justify-content-center align-items-center">
-                                <div wire:loading wire:target="image">
-                                    <div class="spinner-border text-primary"></div>
-                                    <div class="mt-2 text-primary fw-semibold">Loading...</div>
-                                </div>
-
-                                <div wire:loading.remove wire:target="image">
-                                    @if ($image)
-                                        <img src="{{ $image->temporaryUrl() }}" width="100" height="100"
-                                             style="object-fit: cover;">
-                                    @endif
-                                </div>
-                            </x-ui.col> --}}
-
                         </x-ui.row>
                     </x-ui.card-body>
                 </x-ui.card>
@@ -56,8 +40,8 @@
                 <div class="mb-4 text-end">
                     <a href="{{ route('recharge.index') }}" wire:navigate class="btn btn-danger w-sm">Cancel</a>
                     <button type="submit" class="btn btn-success w-sm" wire:loading.attr="disabled">
-                        <span wire:loading.remove wire:target="save">Create</span>
-                        <span wire:loading wire:target="save">
+                        <span wire:loading.remove wire:target="save, image">Create</span>
+                        <span wire:loading wire:target="save, image">
                             <span class="spinner-border spinner-border-sm"></span> creating...
                         </span>
                     </button>

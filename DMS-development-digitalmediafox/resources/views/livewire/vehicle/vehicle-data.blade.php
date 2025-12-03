@@ -507,19 +507,19 @@ wire:target="replace({{ $item->id }})">
 
         <div class="modal-body row g-3">
           <div class="col-md-6">
-            <label class="form-label">Registration Number <span class="text-danger">*</span></label>
+            <label class="form-label">Registration Number/Number Plate <span class="text-danger">*</span></label>
             <input type="text" wire:model.defer="registration_number" class="form-control" placeholder="Enter registration number">
             @error('registration_number') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
 
           <div class="col-md-6">
-            <label class="form-label">Make <span class="text-danger">*</span></label>
+            <label class="form-label">Make/Brand <span class="text-danger">*</span></label>
             <input type="text" wire:model.defer="make" class="form-control" placeholder="Enter make">
             @error('make') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
 
           <div class="col-md-6">
-            <label class="form-label">Model <span class="text-danger">*</span></label>
+            <label class="form-label">Model/Car Name <span class="text-danger">*</span></label>
             <input type="text" wire:model.defer="model" class="form-control" placeholder="Enter model">
             @error('model') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
@@ -542,15 +542,108 @@ wire:target="replace({{ $item->id }})">
           </div>
 
           <div class="col-md-6">
+            <label class="form-label">Color <span class="text-danger">*</span></label>
+            <select id="carColor" aria-label="Car color select" class="form-select" wire:model.defer="color">
+              <!-- neutrals -->
+              <option value="White">White</option>
+              <option value="Pearl White">Pearl White</option>
+              <option value="Champagne">Champagne</option>
+              <option value="Silver">Silver</option>
+              <option value="Metallic Silver">Metallic Silver</option>
+              <option value="Gray">Gray</option>
+              <option value="Charcoal">Charcoal</option>
+              <option value="Black">Black</option>
+              <option value="Jet Black">Jet Black</option>
+
+              <!-- classics -->
+              <option value="Red">Red</option>
+              <option value="Mahogany">Mahogany</option>
+
+              <option value="Navy Blue">Navy Blue</option>
+              <option value="Royal Blue">Royal Blue</option>
+              <option value="Cobalt Blue">Cobalt Blue</option>
+              <option value="Midnight Blue">Midnight Blue</option>
+              <option value="Sky Blue">Sky Blue</option>
+
+              <option value="Forest Green">Forest Green</option>
+
+              <option value="Orange">Orange</option>
+
+              <option value="Gold">Gold</option>
+              <option value="Bronze">Bronze</option>
+
+              <option value="Brown">Brown</option>
+              <option value="Chestnut">Chestnut</option>
+              <option value="Beige">Beige</option>
+
+              <option value="Purple">Purple</option>
+
+              <option value="Pink">Pink</option>
+              <option value="Rose">Rose</option>
+
+              <option value="Turquoise">Turquoise</option>
+              <option value="Teal">Teal</option>
+              <option value="Aqua">Aqua</option>
+
+              <option value="Yellow">Yellow</option>
+
+              <!-- trendy / specialty -->
+              <option value="Pearl Blue">Pearl Blue</option>
+              <option value="Pearl Sand">Pearl Sand</option>
+
+              <!-- sport / vivid -->
+              <option value="Racing Red">Racing Red</option>
+              <option value="Hot Orange">Hot Orange</option>
+              <option value="Neon Green">Neon Green</option>
+              <option value="Electric Blue">Electric Blue</option>
+
+              <!-- uncommon -->
+              <option value="Moss">Moss</option>
+              <option value="Hunter Green">Hunter Green</option>
+              <option value="Rustic Brown">Rustic Brown</option>
+              <option value="Dusty Rose">Dusty Rose</option>
+              <option value="Deep Steel Blue">Deep Steel Blue</option>
+          </select>
+          @error('color') <small class="text-danger">{{ $message }}</small> @enderror
+          </div>
+
+          {{-- <div class="col-md-6">
             <label class="form-label">VIN <span class="text-danger">*</span></label>
             <input type="text" wire:model.defer="vin" class="form-control" placeholder="Enter VIN">
             @error('vin') <small class="text-danger">{{ $message }}</small> @enderror
-          </div>
+          </div> --}}
 
-          <div class="col-md-6">
+          {{-- <div class="col-md-6">
             <label class="form-label">Current Location <span class="text-danger">*</span></label>
             <input type="text" wire:model.defer="current_location" class="form-control" placeholder="Enter current location">
             @error('current_location') <small class="text-danger">{{ $message }}</small> @enderror
+          </div> --}}
+
+          {{-- rental company  --}}
+          <div class="col-md-6">
+            <label class="form-label">Rental Company <span class="text-danger">*</span></label>
+            <input type="text" wire:model.defer="rental_company" class="form-control" placeholder="Enter rental company">
+            @error('rental_company') <small class="text-danger">{{ $message }}</small> @enderror
+          </div>
+
+          {{-- company sticker  --}}
+          <div class="col-md-6">
+            <label class="form-label">Company Sticker <span class="text-danger">*</span></label>
+            <select wire:model.defer="company_sticker" class="form-select">
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+            @error('company_sticker') <small class="text-danger">{{ $message }}</small> @enderror
+          </div>
+
+          {{-- GPS  --}}
+          <div class="col-md-6">
+            <label class="form-label">GPS <span class="text-danger">*</span></label>
+            <select wire:model.defer="gps" class="form-select">
+              <option value="installed">installed </option>
+              <option value="not installed">not installed</option>
+            </select>
+            @error('gps') <small class="text-danger">{{ $message }}</small> @enderror
           </div>
 
           <div class="col-md-6">

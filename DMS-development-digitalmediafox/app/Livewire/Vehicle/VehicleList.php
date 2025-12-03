@@ -64,7 +64,7 @@ class VehicleList extends Component
 
 
 
-    public $registration_number, $make, $model, $year, $vin, $current_location, $status, $fuel_type, $mileage, $notes, $branch_id,$user_branch;
+    public $registration_number, $make, $model, $year, $vin, $current_location, $status, $fuel_type, $mileage, $notes, $branch_id,$user_branch,$color, $rental_company, $company_sticker,$gps;
     public $Avehicles=[];
     public $documents = []; public $uploadIteration = 0;
 
@@ -280,13 +280,17 @@ public function make_replace($id)
             'make' => 'required|string|max:255',
             'model' => 'required|string|max:255',
             'year' => 'required|digits:4|integer|min:1900|max:2100',
-            'vin' => 'required|string|max:255',
-            'current_location' => 'required|string|max:255',
+            // 'vin' => 'required|string|max:255',
+            // 'current_location' => 'required|string|max:255',
             'status' => 'string|in:available,assigned,maintenance,out_of_service',
             'fuel_type' => 'string|in:petrol,diesel,electric,hybrid',
             'mileage' => 'required|numeric|min:0',
             'notes' => 'nullable|string|max:1000',
             'branch_id' => 'required|integer',
+            'color' => 'required',
+            'rental_company' => 'required',
+            'company_sticker' => 'required',
+            'gps' => 'required',
         ];
     }
 
@@ -420,7 +424,7 @@ public function setDateRange3(string $from, string $to)
         ['label' => 'Registration No.', 'column' => 'registration_number', 'isData' => true, 'hasRelation' => false],
         ['label' => 'Make/Model', 'column' => 'vehicle_info', 'isData' => false, 'hasRelation' => false],
         ['label' => 'Status', 'column' => 'status', 'isData' => false, 'hasRelation' => false],
-        ['label' => 'Location', 'column' => 'current_location', 'isData' => true, 'hasRelation' => false],
+        // ['label' => 'Location', 'column' => 'current_location', 'isData' => true, 'hasRelation' => false],
         ['label' => 'Driver', 'column' => 'driver_name', 'isData' => false, 'hasRelation' => false],
         ['label' => 'Action', 'column' => 'action', 'isData' => false, 'hasRelation' => false],
     ];
@@ -581,6 +585,10 @@ public function setDateRange3(string $from, string $to)
         $this->mileage = $vehicle->mileage;
         $this->notes = $vehicle->notes;
         $this->branch_id = $vehicle->branch_id;
+        $this->color = $vehicle->color;
+        $this->rental_company = $vehicle->rental_company;
+        $this->company_sticker = $vehicle->company_sticker;
+        $this->gps = $vehicle->gps;
 
         $this->isEdit = true;
         $this->showModal = true;
@@ -618,6 +626,10 @@ public function setDateRange3(string $from, string $to)
                 'mileage' => $this->mileage,
                 'notes' => $this->notes,
                 'branch_id' => $this->branch_id,
+                'color' => $this->color,
+                'rental_company' => $this->rental_company,
+                'company_sticker' => $this->company_sticker,
+                'gps' => $this->gps,
             ]
         );
         

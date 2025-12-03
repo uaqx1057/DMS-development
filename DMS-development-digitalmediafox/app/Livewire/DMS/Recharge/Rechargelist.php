@@ -6,6 +6,7 @@ use App\Models\RequestRecharge;
 use App\Traits\DataTableTrait;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -59,7 +60,6 @@ class Rechargelist extends Component
             ['label' => 'Opearator', 'column' => 'opearator', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Report', 'column' => 'report', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Amount', 'column' => 'recharge', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'amount'],
-            ['label' => 'View', 'column' => 'recharge', 'isData' => false, 'hasRelation' => true, 'columnRelation' => 'image'],
             ['label' => 'Action', 'column' => 'driverRecharge', 'isData' => false, 'hasRelation' => false],
         ];
 
@@ -121,7 +121,11 @@ class Rechargelist extends Component
             // Approved/ Rejected By 
             $recharge->approved_by = isset($recharge->approved->name) ? '' . $status . ':' . $recharge->approved->name . ' at '. $recharge->updated_at->format('d M Y H:i:s' )  . '<br>' : '';
             // Recharged By
-            $recharge->recharged_by = isset($recharge->recharge) ? 'Recharged By:' .$recharge->recharge->user->name . ' at '. $recharge->recharge->date->format('d M Y H:i:s' ) . '<br>' : '';
+            $recharge->recharged_by = isset($recharge->recharge)
+                ? 'Recharged By: ' . $recharge->recharge->user->name .
+                ' at ' . $recharge->recharge->date->format('d M Y H:i:s') .
+                ' <a href="' . Storage::url($recharge->recharge->image) . '" target="_blank" class="badge text-bg-success">View Proof</a><br>'
+                : '';
             // Reason
             $recharge->reason = isset($recharge->reason) ? 'Reject Reason:' .$recharge->reason : '';
 

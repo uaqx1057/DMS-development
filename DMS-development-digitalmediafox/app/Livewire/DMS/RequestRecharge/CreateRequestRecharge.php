@@ -8,6 +8,7 @@ use App\Models\RequestRecharge;
 use App\Models\User;
 use App\Traits\DataTableTrait;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 
 class CreateRequestRecharge extends Component
@@ -64,7 +65,6 @@ class CreateRequestRecharge extends Component
             ['label' => 'Status', 'column' => 'status', 'isData' => false, 'hasRelation' => false],
             ['label' => 'Report', 'column' => 'report', 'isData' => true, 'hasRelation' => false],
             ['label' => 'Amount', 'column' => 'recharge', 'isData' => true, 'hasRelation' => true, 'columnRelation' => 'amount'],
-            ['label' => 'View', 'column' => 'recharge', 'isData' => false, 'hasRelation' => true, 'columnRelation' => 'image'],
         ];
 
 
@@ -104,13 +104,17 @@ class CreateRequestRecharge extends Component
             $recharge->driver_branch = $recharge->driver->branch->name ?? '';
 
             // Status 
-            $status = $recharge->status == 'accepted' ? 'Approved By' : 'Rejected By';
+            $status = $recharge->status == 'Accepted' ? 'Approved By' : 'Rejected By';
             // Requested By 
             $recharge->requested_by = isset($recharge->user->name) ? 'Requested By: ' . $recharge->user->name . ' at '. $recharge->created_at->format('d M Y H:i:s' ) . '<br>' : '';
             // Approved/ Rejected By 
             $recharge->approved_by = isset($recharge->approved->name) ? '' . $status . ': ' . $recharge->approved->name . ' at '. $recharge->updated_at->format('d M Y H:i:s' )  . '<br>' : '';
             // Recharged By
-            $recharge->recharged_by = isset($recharge->recharge) ? 'Recharged By: ' .$recharge->recharge->user->name . ' at '. $recharge->recharge->date->format('d M Y H:i:s' ) . '<br>' : '';
+            $recharge->recharged_by = isset($recharge->recharge)
+                ? 'Recharged By: ' . $recharge->recharge->user->name .
+                ' at ' . $recharge->recharge->date->format('d M Y H:i:s') .
+                ' <a href="' . Storage::url($recharge->recharge->image) . '" target="_blank" class="badge text-bg-success">View Proof</a><br>'
+                : '';
             // Reason
             $recharge->reason = isset($recharge->reason) ? 'Reject Reason: ' .$recharge->reason : '';
 

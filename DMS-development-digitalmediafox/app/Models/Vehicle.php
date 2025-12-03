@@ -18,6 +18,10 @@ class Vehicle extends Model
         'mileage',
         'notes',
         'branch_id',
+        'color',
+        'rental_company',
+        'company_sticker',
+        'gps',
     ];
     
     public function assignedDriver()
